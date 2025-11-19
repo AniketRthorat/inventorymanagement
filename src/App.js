@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Monitor, Users, Trash2, Briefcase, FileText, Search, User, Printer, HardDrive, Package, Edit2, X, ChevronRight, Filter, Download } from 'lucide-react';
+import Faculty from './Faculty';
+import Labs from './Labs';
+import Devices from './Devices';
 
 // Add Tailwind CSS
 const style = document.createElement('link');
@@ -28,10 +31,10 @@ const initialComputers = [
 ];
 
 const initialFaculty = [
-  { id: 1, name: 'Dr. Rajesh Kumar', cabin: 'Faculty Cabin 1', contact: 'rajesh.k@dept.edu', systemId: 5 },
-  { id: 2, name: 'Prof. Anita Sharma', cabin: 'Faculty Cabin 2', contact: 'anita.s@dept.edu', systemId: 6 },
-  { id: 3, name: 'Dr. Vikram Singh', cabin: 'Faculty Cabin 3', contact: 'vikram.s@dept.edu', systemId: null },
-  { id: 4, name: 'Prof. Meera Patel', cabin: 'Faculty Cabin 4', contact: 'meera.p@dept.edu', systemId: null }
+  { id: 1, name: 'Dr. Rajesh Kumar', designation: 'Professor', email: 'rajesh.k@dept.edu', mobile: '9876543210', location: 'Faculty Cabin 1', systemId: 5 },
+  { id: 2, name: 'Prof. Anita Sharma', designation: 'Associate Professor', email: 'anita.s@dept.edu', mobile: '9876512345', location: 'Faculty Cabin 2', systemId: 6 },
+  { id: 3, name: 'Dr. Vikram Singh', designation: 'Assistant Professor', email: 'vikram.s@dept.edu', mobile: '9876598765', location: 'Faculty Cabin 3', systemId: null },
+  { id: 4, name: 'Prof. Meera Patel', designation: 'Lecturer', email: 'meera.p@dept.edu', mobile: '9876545678', location: 'Faculty Cabin 4', systemId: null }
 ];
 
 const initialDeadStock = [
@@ -64,6 +67,10 @@ function App() {
   const [faculty, setFaculty] = useState(initialFaculty);
   const [deadStock, setDeadStock] = useState(initialDeadStock);
   const [printers, setPrinters] = useState(initialPrinters);
+  const [devices, setDevices] = useState([
+    ...initialComputers.map(c => ({ ...c, type: 'Computer', config: `${c.cpu}, ${c.ram}, ${c.storage}`, locationName: c.labId ? initialLabs.find(l => l.id === c.labId)?.name : initialFaculty.find(f => f.systemId === c.id)?.location || 'HOD Cabin' })),
+    ...initialPrinters.map(p => ({ ...p, type: 'Printer', config: p.model, locationName: p.labId ? initialLabs.find(l => l.id === p.labId)?.name : 'HOD Cabin' }))
+  ]);
   const [activeLabTab, setActiveLabTab] = useState('computers');
   const [deadStockFilter, setDeadStockFilter] = useState('All');
 
@@ -82,12 +89,13 @@ function App() {
       serial: computer.serial,
       issue: reason,
       dateAdded: new Date().toISOString().split('T')[0],
-      previousLocation: assignedFaculty ? assignedFaculty.cabin : (lab ? lab.name : 'HOD Cabin'),
+      previousLocation: assignedFaculty ? assignedFaculty.location : (lab ? lab.name : 'HOD Cabin'),
       type: 'Computer'
     };
 
     setDeadStock([...deadStock, deadStockItem]);
     setComputers(computers.filter(c => c.id !== computer.id));
+    setDevices(devices.filter(d => d.id !== computer.id));
     setSelectedComputer(null);
   };
 
@@ -98,6 +106,7 @@ function App() {
       { icon: Users, label: 'Faculty', view: 'faculty' },
       { icon: Trash2, label: 'Dead Stock', view: 'deadstock' },
       { icon: Briefcase, label: 'HOD Cabin', view: 'hod' },
+      { icon: Monitor, label: 'Devices', view: 'devices' },
       { icon: FileText, label: 'Reports', view: 'reports' }
     ];
 
@@ -243,34 +252,7 @@ function App() {
     );
   };
 
-  const LabsListPage = () => (
-    <div>
-      <Breadcrumb items={[{ label: 'Home', onClick: () => setCurrentView('home') }, { label: 'Labs' }]} />
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Laboratory Inventory</h2>
-      <div className="grid grid-cols-2 gap-6">
-        {labs.map((lab) => (
-          <div key={lab.id} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-               onClick={() => setSelectedLab(lab)}>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">{lab.name}</h3>
-            <p className="text-sm text-gray-600 mb-4">{lab.location}</p>
-            <div className="flex items-center gap-6 mb-4">
-              <div className="flex items-center gap-2">
-                <Monitor size={18} className="text-blue-500" />
-                <span className="text-gray-700">{lab.computers} Computers</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Package size={18} className="text-purple-500" />
-                <span className="text-gray-700">{lab.otherInventory} Other Items</span>
-              </div>
-            </div>
-            <button className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium">
-              View Lab Inventory
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+
 
   const LabInventoryPage = () => {
     const labComputers = computers.filter(c => c.labId === selectedLab.id);
@@ -397,8 +379,7 @@ function App() {
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-gray-600">Location</span>
                 <span className="font-medium text-gray-800">
-                  {selectedComputer.labId ? labs.find(l => l.id === selectedComputer.labId)?.name : 
-                   selectedComputer.facultyId ? faculty.find(f => f.systemId === selectedComputer.id)?.cabin : 'HOD Cabin'}
+                  {selectedComputer.locationName}
                 </span>
               </div>
             </div>
@@ -425,41 +406,6 @@ function App() {
     );
   };
 
-  const FacultyListPage = () => (
-    <div>
-      <Breadcrumb items={[{ label: 'Home', onClick: () => setCurrentView('home') }, { label: 'Faculty' }]} />
-      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Faculty Members</h2>
-      <div className="grid grid-cols-2 gap-6">
-        {faculty.map((fac) => {
-          const assignedSystem = computers.find(c => c.id === fac.systemId);
-          return (
-            <div
-              key={fac.id}
-              onClick={() => setSelectedFaculty(fac)}
-              className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer">
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User size={32} className="text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1">{fac.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{fac.cabin}</p>
-                  <p className="text-sm text-gray-600 mb-3">{fac.contact}</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Monitor size={16} className="text-blue-500" />
-                    <span className="text-gray-700">
-                      {assignedSystem ? assignedSystem.name : 'No system assigned'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   const FacultyDetailPage = () => {
     const assignedSystem = computers.find(c => c.id === selectedFaculty.systemId);
 
@@ -478,8 +424,10 @@ function App() {
             </div>
             <div className="flex-1">
               <h2 className="text-2xl font-semibold text-gray-800 mb-2">{selectedFaculty.name}</h2>
-              <p className="text-gray-600 mb-1">{selectedFaculty.cabin}</p>
-              <p className="text-sm text-gray-600">{selectedFaculty.contact}</p>
+              <p className="text-gray-600 mb-1">{selectedFaculty.designation}</p>
+              <p className="text-sm text-gray-600 mb-1">{selectedFaculty.email}</p>
+              <p className="text-sm text-gray-600 mb-1">{selectedFaculty.mobile}</p>
+              <p className="text-sm text-gray-600">{selectedFaculty.location}</p>
             </div>
           </div>
 
@@ -816,14 +764,15 @@ function App() {
     if (currentView === 'home') return <HomePage />;
     if (currentView === 'labs') {
       if (selectedLab) return <LabInventoryPage />;
-      return <LabsListPage />;
+      return <Labs labs={labs} setLabs={setLabs} setSelectedLab={setSelectedLab} />;
     }
     if (currentView === 'faculty') {
       if (selectedFaculty) return <FacultyDetailPage />;
-      return <FacultyListPage />;
+      return <Faculty faculty={faculty} computers={computers} setFaculty={setFaculty} />;
     }
     if (currentView === 'deadstock') return <DeadStockPage />;
     if (currentView === 'hod') return <HODCabinPage />;
+    if (currentView === 'devices') return <Devices devices={devices} setDevices={setDevices} labs={labs} faculty={faculty} />;
     if (currentView === 'reports') return <ReportsPage />;
     
     return <HomePage />;

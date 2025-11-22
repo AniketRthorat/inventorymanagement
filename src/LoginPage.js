@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import api from './api';
-import { LogIn, Mail, Lock, Globe } from 'lucide-react'; // Import icons, replaced Google with Globe
+import { LogIn, Mail, Lock } from 'lucide-react'; // Corrected import
 
-const LoginPage = () => {
-    const [email, setEmail] = useState('');
+const LoginPage = () => { // Corrected component definition
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -15,18 +15,13 @@ const LoginPage = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        try {
-            const response = await api.post('/auth/login', { email, password });
-            login(response.data.token);
+        
+        if (username === "labadmin" && password === "pass@123") {
+            login('static_token'); // Use a dummy token for static authentication
             navigate('/dashboard');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+        } else {
+            setError('Invalid username or password.');
         }
-    };
-
-    const handleGoogleLogin = () => {
-        // Redirect to backend for Google OAuth
-        window.location.href = `${api.defaults.baseURL}/auth/google`;
     };
 
     return (
@@ -40,23 +35,23 @@ const LoginPage = () => {
                 <form className="mt-8 space-y-6" onSubmit={handleLogin}>
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
-                            <label htmlFor="email-address" className="sr-only">
-                                Email address
+                            <label htmlFor="username" className="sr-only">
+                                Username
                             </label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Mail className="h-5 w-5 text-gray-400" aria-hidden="true" />
                                 </div>
                                 <input
-                                    id="email-address"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
+                                    id="username"
+                                    name="username"
+                                    type="text"
+                                    autoComplete="username"
                                     required
                                     className="appearance-none rounded-none relative block w-full px-10 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                    placeholder="Email address"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -111,20 +106,9 @@ const LoginPage = () => {
                     </div>
                 </div>
 
-                <div>
-                    <button
-                        onClick={handleGoogleLogin}
-                        className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                        <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <Globe className="h-5 w-5 text-red-600" aria-hidden="true" /> {/* Changed from Google to Globe */}
-                        </span>
-                        Sign in with Google
-                    </button>
-                </div>
             </div>
         </div>
     );
-};
+}; // Closing tag for LoginPage component
 
 export default LoginPage;

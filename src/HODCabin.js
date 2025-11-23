@@ -1,6 +1,6 @@
 // inventory-management/src/HODCabin.js
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Monitor, Printer, Package, ChevronRight, Download, Edit2, Trash2 } from 'lucide-react';
+import { Briefcase, Monitor, Printer, Package, ChevronRight, Download, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from './api'; // Import api
 import jsPDF from 'jspdf'; // Import jsPDF

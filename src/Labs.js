@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, Package, X, Plus } from 'lucide-react';
+import { Monitor, X, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from './api';
 

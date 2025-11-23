@@ -16,7 +16,7 @@ const LabDetail = () => {
     useEffect(() => {
         fetchLabDetails();
         fetchLabDevices();
-    }, [id]);
+    }, [id, fetchLabDetails, fetchLabDevices]);
 
     const fetchLabDetails = async () => {
         try {

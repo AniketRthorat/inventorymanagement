@@ -1,6 +1,6 @@
 // inventory-management/src/Dashboard.js
 import React, { useState, useEffect } from 'react';
-import { Home, Monitor, Users, Printer, HardDrive, Download } from 'lucide-react';
+import { Monitor, Users, Printer, HardDrive } from 'lucide-react';
 import api from './api'; // Import the API client
 
 const Dashboard = () => {

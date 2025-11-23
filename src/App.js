@@ -8,7 +8,6 @@ import LoginPage from './LoginPage';
 import Dashboard from './Dashboard';
 import Labs from './Labs'; // Existing component, will be updated later
 import LabsRoutes from './LabsRoutes'; // Import LabsRoutes
-import LabDetail from './LabDetail'; // Import LabDetail
 import Faculty from './Faculty'; // Existing component, will be updated later
 import Devices from './Devices'; // Existing component, will be updated later
 import Reports from './Reports'; // Import Reports

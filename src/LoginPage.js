@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import api from './api';
 import { LogIn, Mail, Lock } from 'lucide-react'; // Corrected import
 
 const LoginPage = () => { // Corrected component definition

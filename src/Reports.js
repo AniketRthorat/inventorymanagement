@@ -1,48 +1,88 @@
 // inventory-management/src/Reports.js
-import React from 'react';
-import { Download, FileText, Monitor, Users, Trash2, Briefcase, ChevronRight, Printer } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Download, FileText, Monitor, Users, Trash2, Briefcase, ChevronRight, Printer, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import Report from './Report';
 
 const Reports = () => {
     const navigate = useNavigate();
+    const reportRef = useRef();
+    const [reportData, setReportData] = useState(null);
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handlePrint = useReactToPrint({
+        content: () => reportRef.current,
+    });
+
+    const handleExportPdf = () => {
+        if (!reportRef.current) return;
+        html2canvas(reportRef.current).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'px', 'a4');
+            const width = pdf.internal.pageSize.getWidth();
+            const height = pdf.internal.pageSize.getHeight();
+            pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+            pdf.save(`${selectedReport.title.replace(/\s/g, '_')}.pdf`);
+        });
+    };
+
+    const generateReport = (report) => {
+        // In a real application, you would fetch this data from the backend
+        const mockData = {
+            summary: {
+                'Total Items': 120,
+                'Active Items': 110,
+                'Dead Stock': 10,
+                'Total Value': '$150,000',
+            },
+            columns: [
+                { Header: 'ID', accessor: 'id' },
+                { Header: 'Name', accessor: 'name' },
+                { Header: 'Type', accessor: 'type' },
+                { Header: 'Status', accessor: 'status' },
+                { Header: 'Location', accessor: 'location' },
+            ],
+            tableData: [
+                { id: 1, name: 'Dell XPS 15', type: 'Laptop', status: 'Active', location: 'Lab 1' },
+                { id: 2, name: 'HP LaserJet Pro', type: 'Printer', status: 'Active', location: 'Faculty Room' },
+                { id: 3, name: 'Old Desktop', type: 'Desktop', status: 'Dead Stock', location: 'Storage' },
+            ],
+        };
+        setReportData(mockData);
+        setSelectedReport(report);
+        setIsModalOpen(true);
+    };
 
     const reportTypes = [
         {
             title: 'Complete Inventory Report',
             description: 'Comprehensive report of all department inventory',
             icon: FileText,
-            // items: totalComputers + totalPrinters + hodInventory.length // Placeholder
         },
         {
             title: 'Lab-wise Report',
             description: 'Detailed inventory breakdown by laboratory',
             icon: Monitor,
-            // items: totalLabs // Placeholder
         },
         {
             title: 'Faculty Inventory Report',
             description: 'Systems and equipment assigned to faculty members',
             icon: Users,
-            // items: totalFaculty // Placeholder
         },
         {
             title: 'Dead Stock Report',
             description: 'List of all non-functional and retired equipment',
             icon: Trash2,
-            // items: deadStock.length // Placeholder
         },
         {
             title: 'System Status Report',
             description: 'Overview of system health and maintenance status',
             icon: Monitor,
-            // items: computers.length // Placeholder
         },
-        // {
-        //     title: 'HOD Cabin Report',
-        //     description: 'Inventory assigned to Head of Department',
-        //     icon: Briefcase,
-        //     // items: hodInventory.length // Placeholder
-        // }
     ];
 
     return (
@@ -68,44 +108,44 @@ const Reports = () => {
                             <div className="flex-1">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-1">{report.title}</h3>
                                 <p className="text-sm text-gray-600 mb-3">{report.description}</p>
-                                {/* <div className="text-sm text-gray-700">
-                                    <span className="font-semibold text-blue-600">{report.items}</span> items included
-                                </div> */}
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                            <button onClick={() => generateReport(report)} className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                                 <Download size={16} />
-                                Export PDF
-                            </button>
-                            <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                                <Printer size={16} />
-                                Print
+                                Generate Report
                             </button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-100">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-1">Quick Export</h3>
-                        <p className="text-sm text-gray-600">Export all inventory data in various formats</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <button className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-200">
-                            Export as Excel
-                        </button>
-                        <button className="px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium border border-gray-200">
-                            Export as CSV
-                        </button>
-                        <button className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
-                            Export as PDF
-                        </button>
+            {isModalOpen && selectedReport && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-20 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-4/5 h-4/5 flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-gray-800">{selectedReport.title}</h3>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="flex-grow overflow-y-auto">
+                            <Report ref={reportRef} data={reportData} title={selectedReport.title} />
+                        </div>
+                        <div className="flex justify-end gap-4 mt-6">
+                            <button onClick={handleExportPdf} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                Export PDF
+                            </button>
+                            <button onClick={handlePrint} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                Print
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

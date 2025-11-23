@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Monitor, Printer, Package, ChevronRight, Download, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import api from './api';
+import api from './api'; // Import api
+import jsPDF from 'jspdf'; // Import jsPDF
 
 const HODCabin = () => {
     const navigate = useNavigate();
@@ -17,11 +18,10 @@ const HODCabin = () => {
     const fetchHodDevices = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/devices'); // Fetch all devices
-            // Filter for devices not assigned to any lab or faculty
-            // This is a simplification; a real system might have a specific 'HOD' faculty_id or lab_id
-            const filtered = response.data.filter(device => device.lab_id === null && device.faculty_id === null);
-            setHodDevices(filtered);
+            const hodCabinLabIdResponse = await api.get('/hod-cabin-lab-id');
+            const hodCabinLabId = hodCabinLabIdResponse.data.hodCabinLabId;
+            const response = await api.get(`/devices?lab_id=${hodCabinLabId}`);
+            setHodDevices(response.data);
         } catch (err) {
             setError('Failed to fetch HOD Cabin devices.');
             console.error('Error fetching HOD Cabin devices:', err);
@@ -43,6 +43,70 @@ const HODCabin = () => {
         }
     };
 
+    const handleExportPdf = () => {
+        console.log('PDF generation started for HOD Cabin report');
+        if (!hodDevices || hodDevices.length === 0) {
+            console.error('No devices in HOD Cabin to export.');
+            return;
+        }
+
+        const doc = new jsPDF();
+        let yPos = 10;
+        const margin = 10;
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        doc.setFontSize(18);
+        doc.text('HOD Cabin Inventory Report', margin, yPos);
+        yPos += 10;
+
+        // Summary
+        doc.setFontSize(12);
+        doc.text('Summary:', margin, yPos);
+        yPos += 7;
+        doc.text(`Total Devices: ${hodDevices.length}`, margin + 5, yPos);
+        yPos += 10;
+
+        // Table Data
+        const headers = ['Name', 'Type', 'Status'];
+        const columnAccessors = ['device_name', 'device_type', 'status'];
+        const columnWidth = (doc.internal.pageSize.getWidth() - 2 * margin) / headers.length;
+        const rowHeight = 7;
+
+        // Draw table headers
+        doc.setFontSize(10);
+        doc.setFillColor(200, 200, 200);
+        doc.rect(margin, yPos, doc.internal.pageSize.getWidth() - 2 * margin, rowHeight, 'F');
+        headers.forEach((header, index) => {
+            doc.text(header, margin + (index * columnWidth) + 2, yPos + 5);
+        });
+        yPos += rowHeight;
+
+        // Draw table body
+        hodDevices.forEach((device, rowIndex) => {
+            if (yPos + rowHeight > pageHeight - margin) {
+                doc.addPage();
+                yPos = margin;
+                doc.setFontSize(10);
+                doc.setFillColor(200, 200, 200);
+                doc.rect(margin, yPos, doc.internal.pageSize.getWidth() - 2 * margin, rowHeight, 'F');
+                headers.forEach((header, index) => {
+                    doc.text(header, margin + (index * columnWidth) + 2, yPos + 5);
+                });
+                yPos += rowHeight;
+            }
+
+            columnAccessors.forEach((accessor, colIndex) => {
+                const cellText = String(device[accessor] || '');
+                doc.text(cellText, margin + (colIndex * columnWidth) + 2, yPos + 5);
+            });
+            yPos += rowHeight;
+        });
+
+        console.log('PDF generated successfully, attempting save');
+        doc.save('HOD_Cabin_Inventory.pdf');
+        console.log('PDF saved');
+    };
+
     if (loading) return <div>Loading HOD Cabin inventory...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
@@ -59,7 +123,10 @@ const HODCabin = () => {
                     <h2 className="text-2xl font-semibold text-gray-800">HOD Cabin Inventory</h2>
                     <p className="text-gray-600">Head of Department Office Equipment</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <button
+                    onClick={handleExportPdf}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
                     <Download size={18} />
                     Export Report
                 </button>

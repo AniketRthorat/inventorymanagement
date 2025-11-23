@@ -10,24 +10,43 @@ const Dashboard = () => {
         totalDevices: 0,
         totalComputers: 0,
         totalPrinters: 0,
-        totalDeadStock: 0,
+        computersByStatus: {}, // Initialize with an empty object
     });
+    const [computersByLab, setComputersByLab] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchDashboardStats = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const response = await api.get('/dashboard');
-                setStats(response.data);
+                // Fetch stats
+                const statsResponse = await api.get('/dashboard');
+                setStats(statsResponse.data);
+
+                // Fetch labs and devices to calculate computers by lab
+                const [labsResponse, devicesResponse] = await Promise.all([
+                    api.get('/labs'),
+                    api.get('/devices'),
+                ]);
+
+                const labs = labsResponse.data;
+                const devices = devicesResponse.data;
+
+                const labCounts = labs.map(lab => {
+                    const count = devices.filter(device => device.lab_id === lab.lab_id).length;
+                    return { lab: lab.lab_name, count };
+                });
+
+                setComputersByLab(labCounts);
             } catch (err) {
-                setError('Failed to fetch dashboard statistics.');
-                console.error('Error fetching dashboard stats:', err);
+                setError('Failed to fetch dashboard data.');
+                console.error('Error fetching dashboard data:', err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchDashboardStats();
+
+        fetchDashboardData();
     }, []);
 
     if (loading) return <div>Loading dashboard...</div>;
@@ -40,28 +59,16 @@ const Dashboard = () => {
         { label: 'Total Faculty', value: stats.totalFaculty, icon: Users, color: 'orange' }
     ];
 
-    // Placeholder for actual data from backend for charts/graphs
-    // These will need to be fetched from the backend as well, or derived from other data
-    const computersByLab = [
-        { lab: 'Data Science Lab', count: 30 },
-        { lab: 'Programming Lab 1', count: 25 },
-        { lab: 'Programming Lab 2', count: 25 },
-        { lab: 'Network Lab', count: 20 }
-    ];
-
-    const computersByStatus = [
-        { status: 'Active', count: stats.totalComputers - stats.totalDeadStock },
-        { status: 'Dead Stock', count: stats.totalDeadStock }
-    ];
+    // Build the computersByStatus array from the stats object
+    const computersByStatus = stats.computersByStatus ? [
+        { status: 'Active', count: stats.computersByStatus.active || 0 },
+        { status: 'Dead Stock', count: stats.computersByStatus.dead_stock || 0 },
+    ] : [];
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-gray-800">Dashboard Overview</h2>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                    <Download size={18} />
-                    Print Report
-                </button>
             </div>
 
             <div className="grid grid-cols-4 gap-6 mb-8">

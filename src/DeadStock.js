@@ -46,10 +46,6 @@ const DeadStock = () => {
 
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-gray-800">Dead Stock Inventory</h2>
-                <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                    <Download size={18} />
-                    Export Report
-                </button>
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">

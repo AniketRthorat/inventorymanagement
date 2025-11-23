@@ -1,6 +1,4 @@
-.report-container {
-  display: none;
-}
+
 
 @media print {
   body * {

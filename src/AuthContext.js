@@ -4,7 +4,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(localStorage.getItem('jwtToken'));
+    const [token, setToken] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
     useEffect(() => {

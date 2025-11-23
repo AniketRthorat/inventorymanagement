@@ -12,7 +12,7 @@ const Report = React.forwardRef(({ data, title }, ref) => {
   return (
     <div ref={ref} className="report-container">
       <div className="report-header">
-        <img src={logo} className="report-logo" alt="logo" />
+        <img src={logo} className="report-logo" alt="logo" style={{ display: 'none' }} />
         <h1 className="report-title">{title}</h1>
       </div>
       

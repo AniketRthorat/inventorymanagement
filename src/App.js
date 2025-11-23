@@ -85,26 +85,69 @@ function App() {
     );
   };
 
-  const TopBar = () => (
-    <div className="h-16 bg-white border-b border-gray-200 fixed top-0 left-64 right-0 flex items-center justify-between px-6 z-10">
-      <div className="text-lg font-semibold text-gray-800">
-        Computer Science Department
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search inventory..."
-            className="pl-10 pr-4 py-2 w-80 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
+  const TopBar = ({ logout }) => {
+    const [currentDateTime, setCurrentDateTime] = useState(new Date());
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State for dropdown
+
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setCurrentDateTime(new Date());
+      }, 1000); // Update every second
+
+      return () => clearInterval(timer);
+    }, []);
+
+    const formattedDate = currentDateTime.toLocaleDateString(undefined, {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const formattedTime = currentDateTime.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+    });
+
+    const userName = "Admin User"; // Static user name
+
+    return (
+      <div className="h-16 bg-white border-b border-gray-200 fixed top-0 left-64 right-0 flex items-center justify-between px-6 z-10">
+        <div className="text-lg font-semibold text-gray-800">
+          Computer Science & Engineering Department
         </div>
-        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center cursor-pointer">
-          <User size={20} className="text-blue-600" />
+        <div className="flex items-center gap-4">
+            <div className="text-gray-600 text-sm">
+                <span className="font-medium">{formattedDate}</span>
+                <span className="ml-2">{formattedTime}</span>
+            </div>
+            <div className="relative">
+                <div
+                    className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User size={20} className="text-blue-600" />
+                    </div>
+                    <span className="font-medium text-gray-800">{userName}</span>
+                </div>
+                {isDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-20">
+                        <button
+                            onClick={logout}
+                            className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // If not authenticated, only render the login page
   if (!isAuthenticated) {
@@ -120,7 +163,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <TopBar />
+      <TopBar logout={logout} />
       <div className="ml-64 mt-16 p-8">
         <Routes>
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

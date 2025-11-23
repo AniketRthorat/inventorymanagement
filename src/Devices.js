@@ -8,9 +8,11 @@ const DeviceList = () => {
   const [devices, setDevices] = useState([]);
   const [labs, setLabs] = useState([]);
   const [faculty, setFaculty] = useState([]);
+  const [hodCabinLabId, setHodCabinLabId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newDevice, setNewDevice] = useState({
     device_name: '',
     device_type: 'laptop',
@@ -33,8 +35,13 @@ const DeviceList = () => {
 
   useEffect(() => {
     fetchDevices();
-    fetchLabsAndFaculty();
   }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      fetchLabsAndFacultyAndHodCabin();
+    }
+  }, [isModalOpen]);
 
   const fetchDevices = async () => {
     try {
@@ -48,14 +55,21 @@ const DeviceList = () => {
     }
   };
 
-  const fetchLabsAndFaculty = async () => {
+  const fetchLabsAndFacultyAndHodCabin = async () => {
     try {
-      const labsResponse = await api.get('/labs');
-      setLabs(labsResponse.data);
-      const facultyResponse = await api.get('/faculty');
+      const [labsResponse, facultyResponse, hodCabinResponse] = await Promise.all([
+        api.get('/labs'),
+        api.get('/faculty'),
+        api.get('/hod-cabin-lab-id')
+      ]);
+      const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
+      const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
+      
+      setLabs(filteredLabs);
       setFaculty(facultyResponse.data);
+      setHodCabinLabId(fetchedHodCabinLabId);
     } catch (err) {
-      console.error('Error fetching labs or faculty:', err);
+      console.error('Error fetching labs, faculty or HOD Cabin ID:', err);
     }
   };
 
@@ -117,13 +131,33 @@ const DeviceList = () => {
     }
   };
 
+  const filteredDevices = devices.filter(device => {
+    const query = searchQuery.toLowerCase();
+    return (
+      device.device_name.toLowerCase().includes(query) ||
+      device.device_type.toLowerCase().includes(query) ||
+      (device.company && device.company.toLowerCase().includes(query))
+    );
+  });
+
   if (loading) return <div>Loading devices...</div>;
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">All Devices</h2>
+        <div className="relative w-1/3">
+          <input
+            type="text"
+            placeholder="Search by Type, Name, or Company..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Monitor size={20} className="text-gray-400" />
+          </div>
+        </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -142,14 +176,14 @@ const DeviceList = () => {
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Company</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Location</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Assigned To</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Price</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">CPU</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Storage</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">RAM</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {devices.map((device, index) => {
+            {filteredDevices.map((device, index) => {
               const assignedLab = labs.find(lab => lab.lab_id === device.lab_id);
               const assignedFaculty = faculty.find(fac => fac.faculty_id === device.faculty_id);
               return (
@@ -164,8 +198,8 @@ const DeviceList = () => {
                   <td className="px-6 py-4 text-gray-600 text-sm">{device.company}</td>
                   <td className="px-6 py-4 text-gray-600 text-sm">{assignedLab ? assignedLab.lab_name : 'N/A'}</td>
                   <td className="px-6 py-4 text-gray-600 text-sm">{assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.price}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.cpu}</td>
+                  <td className="px-6 py-4 text-gray-600 text-sm">{device.storage} GB</td>
+                  <td className="px-6 py-4 text-gray-600 text-sm">{device.ram} GB</td>
                   <td className="px-6 py-4">
                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                         device.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
@@ -229,16 +263,18 @@ const DeviceList = () => {
               <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={newDevice.last_maintenance_date} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
               <select name="status" value={newDevice.status} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 <option value="active">Active</option>
-                <option value="faulty">Faulty</option>
                 <option value="dead_stock">Dead Stock</option>
               </select>
-              <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+              <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={newDevice.faculty_id}>
                 <option value="">Assign to Lab (Optional)</option>
+                {hodCabinLabId && (
+                  <option value={hodCabinLabId}>Assign to HOD Cabin</option>
+                )}
                 {labs.map(lab => (
                   <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
                 ))}
               </select>
-              <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+              <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={newDevice.lab_id}>
                 <option value="">Assign to Faculty (Optional)</option>
                 {faculty.map(fac => (
                   <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
@@ -264,6 +300,7 @@ const DeviceDetail = () => {
     const [device, setDevice] = useState(null);
     const [labs, setLabs] = useState([]);
     const [faculty, setFaculty] = useState([]);
+    const [hodCabinLabId, setHodCabinLabId] = useState(null); // New state for HOD Cabin Lab ID
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -273,8 +310,13 @@ const DeviceDetail = () => {
 
     useEffect(() => {
         fetchDeviceDetails();
-        fetchLabsAndFaculty();
     }, [id]);
+
+    useEffect(() => {
+        if (isEditModalOpen) {
+            fetchLabsAndFacultyAndHodCabin();
+        }
+    }, [isEditModalOpen]);
 
     const fetchDeviceDetails = async () => {
         try {
@@ -289,14 +331,21 @@ const DeviceDetail = () => {
         }
     };
 
-    const fetchLabsAndFaculty = async () => {
+    const fetchLabsAndFacultyAndHodCabin = async () => {
         try {
-            const labsResponse = await api.get('/labs');
-            setLabs(labsResponse.data);
-            const facultyResponse = await api.get('/faculty');
+            const [labsResponse, facultyResponse, hodCabinResponse] = await Promise.all([
+                api.get('/labs'),
+                api.get('/faculty'),
+                api.get('/hod-cabin-lab-id')
+            ]);
+            const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
+            const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
+            
+            setLabs(filteredLabs);
             setFaculty(facultyResponse.data);
+            setHodCabinLabId(fetchedHodCabinLabId);
         } catch (err) {
-            console.error('Error fetching labs or faculty:', err);
+            console.error('Error fetching labs, faculty or HOD Cabin ID:', err);
         }
     };
 
@@ -493,21 +542,26 @@ const DeviceDetail = () => {
                             <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={editedDevice.last_maintenance_date} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             <select name="status" value={editedDevice.status} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="active">Active</option>
-                                <option value="faulty">Faulty</option>
                                 <option value="dead_stock">Dead Stock</option>
                             </select>
-                            <select name="lab_id" value={editedDevice.lab_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <select name="lab_id" value={editedDevice.lab_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={editedDevice.faculty_id}>
                                 <option value="">Assign to Lab (Optional)</option>
+                                {hodCabinLabId && (
+                                    <option value={hodCabinLabId}>Assign to HOD Cabin</option>
+                                )}
                                 {labs.map(lab => (
                                     <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
                                 ))}
                             </select>
-                            <select name="faculty_id" value={editedDevice.faculty_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <select name="faculty_id" value={editedDevice.faculty_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={editedDevice.lab_id || device.faculty_id !== null}>
                                 <option value="">Assign to Faculty (Optional)</option>
                                 {faculty.map(fac => (
                                     <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
                                 ))}
                             </select>
+                            {device.faculty_id !== null && (
+                                <p className="text-xs text-gray-500 col-span-2">This device is already assigned. Please "Deselect Device" first to re-assign.</p>
+                            )}
                         </div>
                         <div className="flex justify-end mt-6">
                             <button onClick={handleUpdateDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">

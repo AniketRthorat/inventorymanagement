@@ -11,7 +11,7 @@ const LabDetail = () => {
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('computers'); // 'computers' or 'printers'
+    const [activeTab, setActiveTab] = useState('desktops'); // Default to desktops
 
     useEffect(() => {
         fetchLabDetails();
@@ -57,10 +57,24 @@ const LabDetail = () => {
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
     if (!lab) return <div>Lab not found.</div>;
 
-    const labComputers = devices.filter(device => device.device_type === 'computer');
+    // Create more granular categories for devices
+    const labDesktops = devices.filter(device => device.device_type === 'desktop');
+    const labLaptops = devices.filter(device => device.device_type === 'laptop');
+    const labServers = devices.filter(device => device.device_type === 'server');
+    const labMonitors = devices.filter(device => device.device_type === 'monitor');
     const labPrinters = devices.filter(device => device.device_type === 'printer');
+    const labPeripherals = devices.filter(device => ['mouse', 'keyboard'].includes(device.device_type));
 
-    const displayItems = activeTab === 'computers' ? labComputers : labPrinters;
+    const deviceCategories = [
+        { key: 'desktops', label: 'Desktops', items: labDesktops },
+        { key: 'laptops', label: 'Laptops', items: labLaptops },
+        { key: 'servers', label: 'Servers', items: labServers },
+        { key: 'monitors', label: 'Monitors', items: labMonitors },
+        { key: 'printers', label: 'Printers', items: labPrinters },
+        { key: 'peripherals', label: 'Peripherals', items: labPeripherals },
+    ];
+
+    const displayItems = deviceCategories.find(cat => cat.key === activeTab)?.items || [];
 
     return (
         <div>
@@ -92,21 +106,21 @@ const LabDetail = () => {
                 </div>
             </div>
 
-            <div className="flex gap-4 mb-6">
-                <button
-                    onClick={() => setActiveTab('computers')}
-                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                        activeTab === 'computers' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}>
-                    Computers ({labComputers.length})
-                </button>
-                <button
-                    onClick={() => setActiveTab('printers')}
-                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                        activeTab === 'printers' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}>
-                    Printers ({labPrinters.length})
-                </button>
+            <div className="flex gap-4 mb-6 border-b border-gray-200">
+                {deviceCategories.map(cat => (
+                    cat.items.length > 0 && (
+                        <button
+                            key={cat.key}
+                            onClick={() => setActiveTab(cat.key)}
+                            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+                                activeTab === cat.key 
+                                    ? 'border-blue-500 text-blue-600' 
+                                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                            }`}>
+                            {cat.label} ({cat.items.length})
+                        </button>
+                    )
+                ))}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -120,10 +134,10 @@ const LabDetail = () => {
                             <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 ${
                                 item.status === 'active' ? 'bg-green-50' : 'bg-orange-50'
                             }`}>
-                                {item.device_type === 'computer' ? (
-                                    <Monitor size={24} className={item.status === 'active' ? 'text-green-600' : 'text-orange-600'} />
-                                ) : (
+                                {item.device_type === 'printer' ? (
                                     <Printer size={24} className="text-purple-600" />
+                                ) : (
+                                    <Monitor size={24} className={item.status === 'active' ? 'text-green-600' : 'text-orange-600'} />
                                 )}
                             </div>
                             <h4 className="font-semibold text-gray-800 mb-1">{item.device_name}</h4>
@@ -136,7 +150,7 @@ const LabDetail = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-4 text-center py-8 text-gray-600">No devices found in this lab.</div>
+                    <div className="col-span-4 text-center py-8 text-gray-600">No devices of this type found in this lab.</div>
                 )}
             </div>
         </div>

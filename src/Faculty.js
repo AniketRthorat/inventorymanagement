@@ -13,6 +13,7 @@ const FacultyList = () => {
     faculty_name: '',
     email: '',
     department: '',
+    location: '',
   });
   const navigate = useNavigate();
 
@@ -46,6 +47,7 @@ const FacultyList = () => {
         faculty_name: '',
         email: '',
         department: '',
+        location: '',
       });
       fetchFaculty(); // Refresh the list
     } catch (err) {
@@ -85,14 +87,7 @@ const FacultyList = () => {
                 <h3 className="text-lg font-semibold text-gray-800 mb-1">{fac.faculty_name}</h3>
                 <p className="text-sm text-gray-600 mb-1">{fac.department}</p>
                 <p className="text-sm text-gray-600 mb-1">{fac.email}</p>
-                {/* <p className="text-sm text-gray-600 mb-1">{fac.mobile}</p> */}
-                {/* <p className="text-sm text-gray-600 mb-2">{fac.location}</p> */}
-                {/* <div className="flex items-center gap-2 text-sm">
-                  <Users size={16} className="text-blue-500" />
-                  <span className="text-gray-700">
-                    {assignedSystem ? assignedSystem.name : 'No system assigned'}
-                  </span>
-                </div> */}
+                <p className="text-sm text-gray-600 mb-1">{fac.location}</p>
               </div>
             </div>
           </div>
@@ -135,6 +130,14 @@ const FacultyList = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               />
+              <input
+                type="text"
+                name="location"
+                placeholder="Location"
+                value={newFaculty.location}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
             </div>
             <div className="flex justify-end mt-6">
               <button
@@ -159,6 +162,8 @@ const FacultyDetail = () => {
     const [assignedDevices, setAssignedDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editedFaculty, setEditedFaculty] = useState(null);
 
     useEffect(() => {
         fetchFacultyDetails();
@@ -169,6 +174,7 @@ const FacultyDetail = () => {
         try {
             const response = await api.get(`/faculty/${id}`);
             setFacultyMember(response.data);
+            setEditedFaculty(response.data); // Initialize editedFaculty
         } catch (err) {
             setError('Failed to fetch faculty details.');
             console.error('Error fetching faculty details:', err);
@@ -179,7 +185,6 @@ const FacultyDetail = () => {
 
     const fetchAssignedDevices = async () => {
         try {
-            // Assuming an API endpoint to get devices assigned to a faculty member
             const response = await api.get(`/devices?faculty_id=${id}`);
             setAssignedDevices(response.data);
         } catch (err) {
@@ -192,11 +197,28 @@ const FacultyDetail = () => {
         if (window.confirm('Are you sure you want to delete this faculty member?')) {
             try {
                 await api.delete(`/faculty/${id}`);
-                navigate('/faculty'); // Redirect to faculty list after deletion
+                navigate('/faculty');
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete faculty member.');
                 console.error('Error deleting faculty member:', err);
             }
+        }
+    };
+
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditedFaculty({ ...editedFaculty, [name]: value });
+    };
+
+    const handleUpdateFaculty = async () => {
+        setError(null);
+        try {
+            await api.put(`/faculty/${id}`, editedFaculty);
+            setIsEditModalOpen(false);
+            fetchFacultyDetails(); // Refresh details
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update faculty member.');
+            console.error('Error updating faculty member:', err);
         }
     };
 
@@ -223,7 +245,7 @@ const FacultyDetail = () => {
                         <h2 className="text-2xl font-semibold text-gray-800 mb-2">{facultyMember.faculty_name}</h2>
                         <p className="text-gray-600 mb-1">{facultyMember.department}</p>
                         <p className="text-sm text-gray-600 mb-1">{facultyMember.email}</p>
-                        {/* Add mobile and location if they were part of the backend schema */}
+                        <p className="text-sm text-gray-600 mb-1">{facultyMember.location}</p>
                     </div>
                 </div>
 
@@ -262,7 +284,9 @@ const FacultyDetail = () => {
                 </div>
 
                 <div className="space-y-3">
-                    <button className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                    <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                         <Edit2 size={18} />
                         Edit Faculty Details
                     </button>
@@ -274,6 +298,61 @@ const FacultyDetail = () => {
                     </button>
                 </div>
             </div>
+
+            {isEditModalOpen && editedFaculty && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-gray-800">Edit Faculty</h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                name="faculty_name"
+                                placeholder="Name"
+                                value={editedFaculty.faculty_name}
+                                onChange={handleEditInputChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            />
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Email"
+                                value={editedFaculty.email}
+                                onChange={handleEditInputChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            />
+                            <input
+                                type="text"
+                                name="department"
+                                placeholder="Department"
+                                value={editedFaculty.department}
+                                onChange={handleEditInputChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            />
+                            <input
+                                type="text"
+                                name="location"
+                                placeholder="Location"
+                                value={editedFaculty.location}
+                                onChange={handleEditInputChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            />
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={handleUpdateFaculty}
+                                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                Update Faculty
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

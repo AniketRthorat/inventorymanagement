@@ -51,7 +51,7 @@ const FacultyList = () => {
       });
       fetchFaculty(); // Refresh the list
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add faculty member.');
+      alert(err.response?.data?.message || 'This email address already exists. Please try another one.');
       console.error('Error adding faculty:', err);
     }
   };

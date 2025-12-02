@@ -13,11 +13,6 @@ const LabDetail = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('desktops'); // Default to desktops
 
-    useEffect(() => {
-        fetchLabDetails();
-        fetchLabDevices();
-    }, [id, fetchLabDetails, fetchLabDevices]);
-
     const fetchLabDetails = async () => {
         try {
             const response = await api.get(`/labs/${id}`);
@@ -40,6 +35,11 @@ const LabDetail = () => {
             console.error('Error fetching lab devices:', err);
         }
     };
+
+    useEffect(() => {
+        fetchLabDetails();
+        fetchLabDevices();
+    }, [id, fetchLabDetails, fetchLabDevices]);
 
     const handleDeleteLab = async () => {
         if (window.confirm('Are you sure you want to delete this lab?')) {
@@ -92,7 +92,9 @@ const LabDetail = () => {
                     <p className="text-gray-600">{lab.location} (Capacity: {lab.capacity})</p>
                 </div>
                 <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    <button
+                        onClick={() => navigate(`/labs/${id}/edit`)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                         <Edit2 size={18} />
                         Edit Lab
                     </button>

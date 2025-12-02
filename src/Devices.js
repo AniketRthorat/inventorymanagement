@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
 import api from './api';
@@ -19,7 +19,6 @@ const DeviceList = () => {
     status: 'active',
     lab_id: null,
     faculty_id: null,
-    price: '',
     ram: '',
     storage: '',
     cpu: '',
@@ -30,6 +29,8 @@ const DeviceList = () => {
     lab_location: '',
     company: '',
     labels: '',
+    invoice_number: '',
+    invoice_pdf: null,
   });
   const navigate = useNavigate();
 
@@ -74,47 +75,62 @@ const DeviceList = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewDevice({ ...newDevice, [name]: value });
+    const { name, value, files } = e.target;
+    if (name === 'invoice_pdf') {
+        setNewDevice({ ...newDevice, invoice_pdf: files[0] });
+    } else {
+        setNewDevice({ ...newDevice, [name]: value });
+    }
   };
 
   const handleAddDevice = async () => {
     setError(null);
     try {
-      const payload = {
-        ...newDevice,
-        lab_id: newDevice.lab_id ? parseInt(newDevice.lab_id) : null,
-        faculty_id: newDevice.faculty_id ? parseInt(newDevice.faculty_id) : null,
-        price: newDevice.price ? parseFloat(newDevice.price) : 0,
-        ram: newDevice.ram ? parseInt(newDevice.ram) : null,
-        storage: newDevice.storage ? parseInt(newDevice.storage) : null,
-        ink_levels: newDevice.ink_levels ? parseInt(newDevice.ink_levels) : null,
-        display_size: newDevice.display_size ? parseFloat(newDevice.display_size) : null,
-      };
-      await api.post('/devices', payload);
-      setIsModalOpen(false);
-      setNewDevice({
-        device_name: '',
-        device_type: 'laptop',
-        status: 'active',
-        lab_id: null,
-        faculty_id: null,
-        price: '',
-        ram: '',
-        storage: '',
-        cpu: '',
-        gpu: '',
-        last_maintenance_date: '',
-        ink_levels: '',
-        display_size: '',
-        lab_location: '',
-        company: '',
-        labels: '',
-      });
-      fetchDevices(); // Refresh the list
+        // Client-side validation for PDF size
+        if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
+            setError('Invoice PDF size cannot exceed 1MB.');
+            return;
+        }
+
+        const formData = new FormData();
+        Object.keys(newDevice).forEach(key => {
+            if (key === 'invoice_pdf' && newDevice[key]) {
+                formData.append(key, newDevice[key]);
+            } else if (newDevice[key] !== null && newDevice[key] !== '') {
+                formData.append(key, newDevice[key]);
+            }
+        });
+
+        await api.post('/devices', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        setIsModalOpen(false);
+        setNewDevice({
+            device_name: '',
+            device_type: 'laptop',
+            status: 'active',
+            lab_id: null,
+            faculty_id: null,
+            ram: '',
+            storage: '',
+            cpu: '',
+            gpu: '',
+            last_maintenance_date: '',
+            ink_levels: '',
+            display_size: '',
+            lab_location: '',
+            company: '',
+            labels: '',
+            invoice_number: '',
+            invoice_pdf: null,
+        });
+        fetchDevices(); // Refresh the list
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add device.');
-      console.error('Error adding device:', err);
+        setError(err.response?.data?.message || 'Failed to add device.');
+        console.error('Error adding device:', err);
     }
   };
 
@@ -178,6 +194,7 @@ const DeviceList = () => {
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Assigned To</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Storage</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">RAM</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
@@ -200,6 +217,7 @@ const DeviceList = () => {
                   <td className="px-6 py-4 text-gray-600 text-sm">{assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</td>
                   <td className="px-6 py-4 text-gray-600 text-sm">{device.storage} GB</td>
                   <td className="px-6 py-4 text-gray-600 text-sm">{device.ram} GB</td>
+                  <td className="px-6 py-4 text-gray-600 text-sm">{device.invoice_number}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                         device.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
@@ -242,12 +260,20 @@ const DeviceList = () => {
                 <option value="monitor">Monitor</option>
                 <option value="printer">Printer</option>
                 <option value="server">Server</option>
+                <option value="digital_board">Digital Board</option>
+                <option value="pointer">Pointer</option>
+                <option value="projector">Projector</option>
+                <option value="cpu">CPU</option>
               </select>
               <input type="text" name="device_name" placeholder="Device Name" value={newDevice.device_name} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
               <input type="text" name="company" placeholder="Company" value={newDevice.company} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
               <input type="text" name="labels" placeholder="Labels (comma-separated)" value={newDevice.labels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
               <input type="text" name="lab_location" placeholder="Lab Location" value={newDevice.lab_location} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <input type="number" name="price" placeholder="Price" value={newDevice.price} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <input type="text" name="invoice_number" placeholder="Invoice Number" value={newDevice.invoice_number} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <div className="flex flex-col">
+                <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 1MB)</label>
+                <input type="file" id="invoice_pdf" name="invoice_pdf" onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              </div>
               {(newDevice.device_type === 'desktop' || newDevice.device_type === 'laptop') && (
                 <>
                   <input type="number" name="ram" placeholder="RAM (GB)" value={newDevice.ram} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
@@ -308,17 +334,7 @@ const DeviceDetail = () => {
     const [editedDevice, setEditedDevice] = useState(null);
     const [reassignFacultyId, setReassignFacultyId] = useState('');
 
-    useEffect(() => {
-        fetchDeviceDetails();
-    }, [id]);
-
-    useEffect(() => {
-        if (isEditModalOpen) {
-            fetchLabsAndFacultyAndHodCabin();
-        }
-    }, [isEditModalOpen]);
-
-    const fetchDeviceDetails = async () => {
+    const fetchDeviceDetails = useCallback(async () => {
         try {
             const response = await api.get(`/devices/${id}`);
             setDevice(response.data);
@@ -329,7 +345,11 @@ const DeviceDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchDeviceDetails();
+    }, [fetchDeviceDetails]);
 
     const fetchLabsAndFacultyAndHodCabin = async () => {
         try {
@@ -361,7 +381,6 @@ const DeviceDetail = () => {
                 ...editedDevice,
                 lab_id: editedDevice.lab_id ? parseInt(editedDevice.lab_id) : null,
                 faculty_id: editedDevice.faculty_id ? parseInt(editedDevice.faculty_id) : null,
-                price: editedDevice.price ? parseFloat(editedDevice.price) : 0,
                 ram: editedDevice.ram ? parseInt(editedDevice.ram) : null,
                 storage: editedDevice.storage ? parseInt(editedDevice.storage) : null,
                 ink_levels: editedDevice.ink_levels ? parseInt(editedDevice.ink_levels) : null,
@@ -465,7 +484,6 @@ const DeviceDetail = () => {
                         <p className="text-gray-600 mb-1">Company: {device.company}</p>
                         <p className="text-gray-600 mb-1">Labels: {device.labels}</p>
                         <p className="text-sm text-gray-600 mb-1">Status: {device.status}</p>
-                        <p className="text-sm text-gray-600 mb-1">Price: ${device.price}</p>
                         <p className="text-sm text-gray-600 mb-1">CPU: {device.cpu}</p>
                         <p className="text-sm text-gray-600 mb-1">GPU: {device.gpu}</p>
                         <p className="text-sm text-gray-600 mb-1">RAM: {device.ram} GB</p>
@@ -475,6 +493,12 @@ const DeviceDetail = () => {
                         <p className="text-sm text-gray-600 mb-1">Last Maintenance: {device.last_maintenance_date}</p>
                         <p className="text-sm text-gray-600 mb-1">Assigned Lab: {assignedLab ? assignedLab.lab_name : 'N/A'}</p>
                         <p className="text-sm text-gray-600">Assigned Faculty: {assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</p>
+                        <p className="text-sm text-gray-600">Invoice Number: {device.invoice_number}</p>
+                        {device.invoice_pdf && (
+                            <a href={`http://localhost:8787/api/devices/${device.device_id}/invoice`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-medium">
+                                Download Invoice
+                            </a>
+                        )}
                     </div>
                 </div>
 
@@ -526,7 +550,6 @@ const DeviceDetail = () => {
                             <input type="text" name="company" placeholder="Company" value={editedDevice.company} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             <input type="text" name="labels" placeholder="Labels (comma-separated)" value={editedDevice.labels} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             <input type="text" name="lab_location" placeholder="Lab Location" value={editedDevice.lab_location} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                            <input type="number" name="price" placeholder="Price" value={editedDevice.price} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             {(editedDevice.device_type === 'desktop' || editedDevice.device_type === 'laptop') && (
                                 <>
                                     <input type="number" name="ram" placeholder="RAM (GB)" value={editedDevice.ram} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />

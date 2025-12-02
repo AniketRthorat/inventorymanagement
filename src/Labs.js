@@ -14,7 +14,6 @@ const Labs = () => {
     capacity: '',
   });
   const navigate = useNavigate();
-  const [hodCabinLabId, setHodCabinLabId] = useState(null); // New state for HOD Cabin Lab ID
 
   useEffect(() => {
     fetchLabs();
@@ -24,12 +23,10 @@ const Labs = () => {
     try {
       const [labsResponse, hodCabinResponse] = await Promise.all([
         api.get('/labs'),
-        api.get('/hod-cabin-lab-id') // Fetch HOD Cabin Lab ID
+        api.get('/hod-cabin-lab-id')
       ]);
       const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
-      setHodCabinLabId(fetchedHodCabinLabId);
       
-      // Filter out the HOD Cabin lab from the general labs list
       const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
       setLabs(filteredLabs);
     } catch (err) {

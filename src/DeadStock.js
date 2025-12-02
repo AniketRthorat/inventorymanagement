@@ -76,8 +76,10 @@ const DeadStock = () => {
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Item Name</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Type</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Configuration</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date Added to Dead Stock</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Download Invoice</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,7 +94,8 @@ const DeadStock = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-gray-600 text-sm">{item.configuration}</td>
-                                    <td className="px-6 py-4 text-gray-600 text-sm">{new Date(item.updated_at).toLocaleDateString()}</td> {/* Assuming updated_at reflects dead stock date */}
+                                    <td className="px-6 py-4 text-gray-600 text-sm">{item.invoice_number}</td>
+                                    <td className="px-6 py-4 text-gray-600 text-sm">{new Date(item.updated_at.replace(' ', 'T')).toLocaleDateString()}</td>
                                     <td className="px-6 py-4">
                                         <button
                                             onClick={() => navigate(`/devices/${item.device_id}`)}
@@ -101,11 +104,26 @@ const DeadStock = () => {
                                             View Details
                                         </button>
                                     </td>
+                                    <td className="px-6 py-4">
+                                        {item.has_invoice_pdf ? (
+                                            <a
+                                                href={`http://localhost:8787/api/devices/${item.device_id}/invoice`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                                            >
+                                                <Download size={14} />
+                                                Invoice
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400">Not available</span>
+                                        )}
+                                    </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="5" className="py-12 text-center text-gray-600">
+                                <td colSpan="7" className="py-12 text-center text-gray-600">
                                     <Trash2 size={48} className="text-gray-300 mx-auto mb-4" />
                                     No dead stock items found.
                                 </td>

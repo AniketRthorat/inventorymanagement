@@ -3,11 +3,30 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8787/api'; // Assuming backend runs on 8787
 
+// Function to serialize parameters for Axios
+const serializeParams = (params) => {
+    const parts = [];
+    for (const key in params) {
+        if (Object.prototype.hasOwnProperty.call(params, key)) {
+            const value = params[key];
+            if (Array.isArray(value)) {
+                value.forEach(val => {
+                    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`);
+                });
+            } else if (value !== null && typeof value !== 'undefined') { // Only include non-null/undefined single values
+                parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+            }
+        }
+    }
+    return parts.join('&');
+};
+
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
+    paramsSerializer: serializeParams // Use the custom serializer
 });
 
 // Request interceptor to attach JWT token

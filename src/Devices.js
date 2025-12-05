@@ -473,13 +473,13 @@ const DeviceDetail = () => {
         }
     };
 
-    const handleOpenDeadStockModal = () => {
+    const handleOpenDeadStockModal = useCallback(() => {
         if (device.device_type === 'desktop') {
             setIsDeadStockPartsModalOpen(true);
         } else {
             setIsDeadStockModalOpen(true);
         }
-    };
+    }, [device, setIsDeadStockPartsModalOpen, setIsDeadStockModalOpen]);
 
     const handleDeadStockPartsChange = (e) => {
         const { name, checked } = e.target;

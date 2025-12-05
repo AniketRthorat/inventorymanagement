@@ -1,5 +1,5 @@
 // inventory-management/src/LabDetail.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Monitor, Printer, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 import api from './api';

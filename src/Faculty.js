@@ -176,9 +176,9 @@ const FacultyDetail = () => {
     useEffect(() => {
         fetchFacultyDetails();
         fetchAssignedDevices();
-    }, [id]);
+    }, [id, fetchFacultyDetails, fetchAssignedDevices]);
 
-    const fetchFacultyDetails = async () => {
+    const fetchFacultyDetails = useCallback(async () => {
         try {
             const response = await api.get(`/faculty/${id}`);
             setFacultyMember(response.data);
@@ -189,9 +189,9 @@ const FacultyDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [api, id]);
 
-    const fetchAssignedDevices = async () => {
+    const fetchAssignedDevices = useCallback(async () => {
         try {
             const response = await api.get(`/devices?faculty_id=${id}`);
             setAssignedDevices(response.data);
@@ -199,7 +199,7 @@ const FacultyDetail = () => {
             setError('Failed to fetch assigned devices.');
             console.error('Error fetching assigned devices:', err);
         }
-    };
+    }, [api, id]);
 
     const handleDeleteFaculty = async () => {
         if (window.confirm('Are you sure you want to delete this faculty member?')) {

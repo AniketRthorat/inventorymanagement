@@ -457,18 +457,6 @@ const DeviceDetail = () => {
         }
     };
 
-    const handleDeselectDevice = async () => {
-        if (window.confirm('Are you sure you want to deselect this device from its current assignment?')) {
-            try {
-                await api.put(`/devices/${id}/deselect`);
-                fetchDeviceDetails(); // Refresh details
-            } catch (err) {
-                setError(err.response?.data?.message || 'Failed to deselect device.');
-                console.error('Error deselecting device:', err);
-            }
-        }
-    };
-
     const handleMarkAsDeadStock = async () => {
         if (!deadStockRemark) {
             setError('Remark is required to mark a device as dead stock.');

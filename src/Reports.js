@@ -1,6 +1,6 @@
 // inventory-management/src/Reports.js
 import React, { useRef, useState } from 'react';
-import { Download, FileText, Monitor, Users, Trash2, Briefcase, ChevronRight, Printer, X } from 'lucide-react';
+import { Download, FileText, Monitor, Users, Trash2, ChevronRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import jsPDF from 'jspdf';

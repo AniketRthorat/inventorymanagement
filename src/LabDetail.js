@@ -13,7 +13,7 @@ const LabDetail = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('desktops'); // Default to desktops
 
-    const fetchLabDetails = async () => {
+    const fetchLabDetails = useCallback(async () => {
         try {
             const response = await api.get(`/labs/${id}`);
             setLab(response.data);
@@ -23,9 +23,9 @@ const LabDetail = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [api, id, setLab, setError, setLoading]);
 
-    const fetchLabDevices = async () => {
+    const fetchLabDevices = useCallback(async () => {
         try {
             // Assuming an API endpoint to get devices by lab_id
             const response = await api.get(`/devices?lab_id=${id}`);
@@ -34,7 +34,7 @@ const LabDetail = () => {
             setError('Failed to fetch lab devices.');
             console.error('Error fetching lab devices:', err);
         }
-    };
+    }, [api, id, setDevices, setError]);
 
     useEffect(() => {
         fetchLabDetails();

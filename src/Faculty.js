@@ -40,6 +40,14 @@ const FacultyList = () => {
 
   const handleAddFaculty = async () => {
     setError(null);
+
+    // Frontend email domain validation
+    const allowedDomainsRegex = /^[\w.-]+@(sgipolytechnic\.in|sgiinstitute\.in)$/;
+    if (!allowedDomainsRegex.test(newFaculty.email)) {
+      alert('Invalid email domain. Only @sgipolytechnic.in or @sgiinstitute.in are allowed.');
+      return;
+    }
+
     try {
       await api.post('/faculty', newFaculty);
       setIsModalOpen(false);

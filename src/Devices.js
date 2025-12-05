@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users } from 'lucide-react';
+import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2 } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
 import api from './api';
 
@@ -22,7 +22,7 @@ const DeviceList = () => {
     ram: '',
     storage: '',
     cpu: '',
-    gpu: '',
+    ip_generation: '',
     last_maintenance_date: '',
     ink_levels: '',
     display_size: '',
@@ -46,7 +46,7 @@ const DeviceList = () => {
 
   const fetchDevices = async () => {
     try {
-      const response = await api.get('/devices');
+      const response = await api.get('/devices', { params: { status: 'active' } });
       setDevices(response.data);
     } catch (err) {
       setError('Failed to fetch devices.');
@@ -86,6 +86,11 @@ const DeviceList = () => {
   const handleAddDevice = async () => {
     setError(null);
     try {
+        if (!newDevice.device_name || !newDevice.device_type || !newDevice.status) {
+            const errorMessage = 'Please fill all mandatory fields.';
+            window.alert(errorMessage);
+            return;
+        }
         // Client-side validation for PDF size
         if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
             setError('Invoice PDF size cannot exceed 1MB.');
@@ -129,7 +134,9 @@ const DeviceList = () => {
         });
         fetchDevices(); // Refresh the list
     } catch (err) {
-        setError(err.response?.data?.message || 'Failed to add device.');
+        const errorMessage = 'Failed to add device. Please fill all mandatory fields.';
+        setError(errorMessage);
+        window.alert(errorMessage);
         console.error('Error adding device:', err);
     }
   };
@@ -142,6 +149,22 @@ const DeviceList = () => {
         return <Laptop size={20} />;
       case 'printer':
         return <PrinterIcon size={20} />;
+      case 'mouse':
+        return <Mouse size={20} />;
+      case 'keyboard':
+        return <Keyboard size={20} />;
+      case 'monitor':
+        return <Monitor size={20} />;
+      case 'server':
+        return <Server size={20} />;
+      case 'digital_board':
+        return <Presentation size={20} />;
+      case 'pointer':
+        return <MousePointer2 size={20} />;
+      case 'projector':
+        return <Projector size={20} />;
+      case 'cpu':
+        return <Cpu size={20} />;
       default:
         return null;
     }
@@ -279,7 +302,7 @@ const DeviceList = () => {
                   <input type="number" name="ram" placeholder="RAM (GB)" value={newDevice.ram} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                   <input type="number" name="storage" placeholder="Storage (GB)" value={newDevice.storage} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                   <input type="text" name="cpu" placeholder="CPU" value={newDevice.cpu} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                  <input type="text" name="gpu" placeholder="GPU" value={newDevice.gpu} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="ip_generation" placeholder="IP Generation" value={newDevice.ip_generation} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                   <input type="number" name="display_size" placeholder="Display Size (inches)" value={newDevice.display_size} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </>
               )}
@@ -291,7 +314,7 @@ const DeviceList = () => {
                 <option value="active">Active</option>
                 <option value="dead_stock">Dead Stock</option>
               </select>
-              <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={newDevice.faculty_id}>
+              <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 <option value="">Assign to Lab (Optional)</option>
                 {hodCabinLabId && (
                   <option value={hodCabinLabId}>Assign to HOD Cabin</option>
@@ -300,7 +323,7 @@ const DeviceList = () => {
                   <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
                 ))}
               </select>
-              <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={newDevice.lab_id}>
+              <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 <option value="">Assign to Faculty (Optional)</option>
                 {faculty.map(fac => (
                   <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
@@ -331,6 +354,15 @@ const DeviceDetail = () => {
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
+    const [isDeadStockModalOpen, setIsDeadStockModalOpen] = useState(false);
+    const [isDeadStockPartsModalOpen, setIsDeadStockPartsModalOpen] = useState(false);
+    const [deadStockParts, setDeadStockParts] = useState({
+        mouse: false,
+        keyboard: false,
+        cpu: false,
+        monitor: false,
+    });
+    const [deadStockRemark, setDeadStockRemark] = useState('');
     const [editedDevice, setEditedDevice] = useState(null);
     const [reassignFacultyId, setReassignFacultyId] = useState('');
 
@@ -350,6 +382,12 @@ const DeviceDetail = () => {
     useEffect(() => {
         fetchDeviceDetails();
     }, [fetchDeviceDetails]);
+
+    useEffect(() => {
+        if (isReassignModalOpen) {
+            fetchLabsAndFacultyAndHodCabin();
+        }
+    }, [isReassignModalOpen]);
 
     const fetchLabsAndFacultyAndHodCabin = async () => {
         try {
@@ -432,16 +470,57 @@ const DeviceDetail = () => {
     };
 
     const handleMarkAsDeadStock = async () => {
-        if (window.confirm('Are you sure you want to mark this device as dead stock?')) {
-            try {
-                await api.put(`/devices/${id}/deadstock`);
-                fetchDeviceDetails(); // Refresh details
-            } catch (err) {
-                setError(err.response?.data?.message || 'Failed to mark device as dead stock.');
-                console.error('Error marking device as dead stock:', err);
-            }
+        if (!deadStockRemark) {
+            setError('Remark is required to mark a device as dead stock.');
+            return;
+        }
+        try {
+            await api.put(`/devices/${id}/deadstock`, { remark: deadStockRemark });
+            setIsDeadStockModalOpen(false);
+            setDeadStockRemark('');
+            fetchDeviceDetails(); // Refresh details
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to mark device as dead stock.');
+            console.error('Error marking device as dead stock:', err);
         }
     };
+
+    const handleOpenDeadStockModal = () => {
+        if (device.device_type === 'desktop') {
+            setIsDeadStockPartsModalOpen(true);
+        } else {
+            setIsDeadStockModalOpen(true);
+        }
+    };
+
+    const handleDeadStockPartsChange = (e) => {
+        const { name, checked } = e.target;
+        setDeadStockParts(prev => ({ ...prev, [name]: checked }));
+    };
+
+    const handleMarkPartsAsDeadStock = async () => {
+        const parts = Object.keys(deadStockParts).filter(part => deadStockParts[part]);
+        if (parts.length === 0) {
+            setError('Please select at least one part to mark as dead stock.');
+            return;
+        }
+        if (!deadStockRemark) {
+            setError('Remark is required.');
+            return;
+        }
+
+        try {
+            await api.put(`/devices/${id}/deadstock-parts`, { parts, remark: deadStockRemark });
+            setIsDeadStockPartsModalOpen(false);
+            setDeadStockRemark('');
+            setDeadStockParts({ mouse: false, keyboard: false, cpu: false, monitor: false });
+            fetchDeviceDetails(); // Refresh details
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to mark parts as dead stock.');
+            console.error('Error marking parts as dead stock:', err);
+        }
+    };
+
 
     if (loading) return <div>Loading device details...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -458,6 +537,22 @@ const DeviceDetail = () => {
             return <Laptop size={40} />;
           case 'printer':
             return <PrinterIcon size={40} />;
+          case 'mouse':
+            return <Mouse size={40} />;
+          case 'keyboard':
+            return <Keyboard size={40} />;
+          case 'monitor':
+            return <Monitor size={40} />;
+          case 'server':
+            return <Server size={40} />;
+          case 'digital_board':
+            return <Presentation size={40} />;
+          case 'pointer':
+            return <MousePointer2 size={40} />;
+          case 'projector':
+            return <Projector size={40} />;
+          case 'cpu':
+            return <Cpu size={40} />;
           default:
             return null;
         }
@@ -485,7 +580,7 @@ const DeviceDetail = () => {
                         <p className="text-gray-600 mb-1">Labels: {device.labels}</p>
                         <p className="text-sm text-gray-600 mb-1">Status: {device.status}</p>
                         <p className="text-sm text-gray-600 mb-1">CPU: {device.cpu}</p>
-                        <p className="text-sm text-gray-600 mb-1">GPU: {device.gpu}</p>
+                        <p className="text-sm text-gray-600 mb-1">IP Generation: {device.ip_generation}</p>
                         <p className="text-sm text-gray-600 mb-1">RAM: {device.ram} GB</p>
                         <p className="text-sm text-gray-600 mb-1">Storage: {device.storage} GB</p>
                         <p className="text-sm text-gray-600 mb-1">Display Size: {device.display_size} inches</p>
@@ -511,11 +606,7 @@ const DeviceDetail = () => {
                         <Users size={18} />
                         Reassign Device
                     </button>
-                    <button onClick={handleDeselectDevice} className="w-full flex items-center justify-center gap-2 py-3 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors font-medium">
-                        <X size={18} />
-                        Deselect Device
-                    </button>
-                    <button onClick={handleMarkAsDeadStock} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    <button onClick={() => setIsDeadStockModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
                         <Trash2 size={18} />
                         Mark as Dead Stock
                     </button>
@@ -555,7 +646,7 @@ const DeviceDetail = () => {
                                     <input type="number" name="ram" placeholder="RAM (GB)" value={editedDevice.ram} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                                     <input type="number" name="storage" placeholder="Storage (GB)" value={editedDevice.storage} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                                     <input type="text" name="cpu" placeholder="CPU" value={editedDevice.cpu} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                                    <input type="text" name="gpu" placeholder="GPU" value={editedDevice.gpu} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="ip_generation" placeholder="IP Generation" value={editedDevice.ip_generation} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                                     <input type="number" name="display_size" placeholder="Display Size (inches)" value={editedDevice.display_size} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                                 </>
                             )}
@@ -616,6 +707,79 @@ const DeviceDetail = () => {
                         <div className="flex justify-end mt-6">
                             <button onClick={handleReassignDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                                 Reassign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Mark as Dead Stock Modal */}
+            {isDeadStockModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-gray-800">Mark as Dead Stock</h3>
+                            <button onClick={() => setIsDeadStockModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <textarea
+                                name="deadStockRemark"
+                                placeholder="Enter remark for marking as dead stock..."
+                                value={deadStockRemark}
+                                onChange={(e) => setDeadStockRemark(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                rows="4"
+                            ></textarea>
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button onClick={handleMarkAsDeadStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Mark Parts as Dead Stock Modal (for Desktops) */}
+            {isDeadStockPartsModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-gray-800">Mark Desktop Parts as Dead Stock</h3>
+                            <button onClick={() => setIsDeadStockPartsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <p>Select the defective parts from this desktop set to move to dead stock.</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                {Object.keys(deadStockParts).map(part => (
+                                    <label key={part} className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            name={part}
+                                            checked={deadStockParts[part]}
+                                            onChange={handleDeadStockPartsChange}
+                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                        <span className="capitalize">{part}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <textarea
+                                name="deadStockRemark"
+                                placeholder="Enter remark for these parts..."
+                                value={deadStockRemark}
+                                onChange={(e) => setDeadStockRemark(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                rows="4"
+                            ></textarea>
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button onClick={handleMarkPartsAsDeadStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                Confirm
                             </button>
                         </div>
                     </div>

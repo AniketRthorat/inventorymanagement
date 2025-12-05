@@ -1,6 +1,6 @@
 // inventory-management/src/Dashboard.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Monitor, Users, Printer, HardDrive, X, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon } from 'lucide-react'; // Import X for close button
+import { Monitor, Users, Printer, HardDrive, X, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard } from 'lucide-react'; // Import X for close button
 import api from './api'; // Import the API client
 
 const Dashboard = () => {
@@ -10,6 +10,8 @@ const Dashboard = () => {
         totalDevices: 0,
         totalComputers: 0,
         totalPrinters: 0,
+        totalMice: 0,
+        totalKeyboards: 0,
         computersByStatus: {}, // Initialize with an empty object
     });
     const [computersByLab, setComputersByLab] = useState([]);
@@ -107,6 +109,16 @@ const Dashboard = () => {
                     apiResponse = await api.get('/devices', { params: { device_type: 'cpu' } });
                     items = apiResponse.data;
                     break;
+                case 'totalMice':
+                    title = 'All Mice';
+                    apiResponse = await api.get('/devices', { params: { device_type: 'mouse' } });
+                    items = apiResponse.data;
+                    break;
+                case 'totalKeyboards':
+                    title = 'All Keyboards';
+                    apiResponse = await api.get('/devices', { params: { device_type: 'keyboard' } });
+                    items = apiResponse.data;
+                    break;
                 case 'totalLabs':
                     title = 'All Labs';
                     response = await api.get('/labs'); // labs endpoint doesn't return debug info
@@ -158,6 +170,8 @@ const Dashboard = () => {
         { label: 'Total Pointers', value: stats.totalPointers, icon: MousePointer2, color: 'red', type: 'totalPointers' },
         { label: 'Total Projectors', value: stats.totalProjectors, icon: ProjectorIcon, color: 'yellow', type: 'totalProjectors' },
         { label: 'Total CPUs', value: stats.totalCPUs, icon: Cpu, color: 'teal', type: 'totalCPUs' },
+        { label: 'Total Mice', value: stats.totalMice, icon: Mouse, color: 'orange', type: 'totalMice' },
+        { label: 'Total Keyboards', value: stats.totalKeyboards, icon: Keyboard, color: 'indigo', type: 'totalKeyboards' },
         { label: 'Total Labs', value: stats.totalLabs, icon: HardDrive, color: 'green', type: 'totalLabs' }
     ];
 
@@ -324,7 +338,7 @@ const Dashboard = () => {
                         {modalError && <p style={{ color: 'red' }}>{modalError}</p>}
                         {!modalLoading && !modalError && (
                             renderModalContent(
-                                modalTitle.includes('Computers') || modalTitle.includes('Printers') || modalTitle.includes('Digital Boards') || modalTitle.includes('Pointers') || modalTitle.includes('Projectors') || modalTitle.includes('CPUs') || modalTitle.startsWith('Devices in') || modalTitle.startsWith('Computers:')
+                                modalTitle.includes('Computers') || modalTitle.includes('Printers') || modalTitle.includes('Digital Boards') || modalTitle.includes('Pointers') || modalTitle.includes('Projectors') || modalTitle.includes('CPUs') || modalTitle.includes('Mice') || modalTitle.includes('Keyboards') || modalTitle.startsWith('Devices in') || modalTitle.startsWith('Computers:')
                                 ? 'totalComputers' // All these types render a device table
                                 : (modalTitle === 'All Labs' ? 'totalLabs' : 'totalFaculty'), // Other types render specific tables
                                 modalContent

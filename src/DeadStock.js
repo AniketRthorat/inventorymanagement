@@ -18,9 +18,8 @@ const DeadStock = () => {
     const fetchDeadStockDevices = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/devices'); // Fetch all devices
-            const filtered = response.data.filter(device => device.status === 'dead_stock');
-            setDeadStockDevices(filtered);
+            const response = await api.get('/devices', { params: { status: 'dead_stock' } });
+            setDeadStockDevices(response.data);
         } catch (err) {
             setError('Failed to fetch dead stock devices.');
             console.error('Error fetching dead stock devices:', err);
@@ -76,6 +75,7 @@ const DeadStock = () => {
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Item Name</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Type</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Configuration</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Remark</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date Added to Dead Stock</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
@@ -94,6 +94,11 @@ const DeadStock = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-gray-600 text-sm">{item.configuration}</td>
+                                    <td className="px-6 py-4 text-gray-600 text-sm">
+                                        <div style={{ maxHeight: '4rem', overflowY: 'auto', maxWidth: '15rem', overflowX: 'auto', wordWrap: 'break-word' }}>
+                                            {item.remark || 'N/A'}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-gray-600 text-sm">{item.invoice_number}</td>
                                     <td className="px-6 py-4 text-gray-600 text-sm">{new Date(item.updated_at.replace(' ', 'T')).toLocaleDateString()}</td>
                                     <td className="px-6 py-4">
@@ -123,7 +128,7 @@ const DeadStock = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="7" className="py-12 text-center text-gray-600">
+                                <td colSpan="8" className="py-12 text-center text-gray-600">
                                     <Trash2 size={48} className="text-gray-300 mx-auto mb-4" />
                                     No dead stock items found.
                                 </td>

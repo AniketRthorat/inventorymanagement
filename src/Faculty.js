@@ -173,11 +173,6 @@ const FacultyDetail = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editedFaculty, setEditedFaculty] = useState(null);
 
-    useEffect(() => {
-        fetchFacultyDetails();
-        fetchAssignedDevices();
-    }, [id, fetchFacultyDetails, fetchAssignedDevices]);
-
     const fetchFacultyDetails = useCallback(async () => {
         try {
             const response = await api.get(`/faculty/${id}`);
@@ -200,6 +195,11 @@ const FacultyDetail = () => {
             console.error('Error fetching assigned devices:', err);
         }
     }, [api, id]);
+
+    useEffect(() => {
+        fetchFacultyDetails();
+        fetchAssignedDevices();
+    }, [id, fetchFacultyDetails, fetchAssignedDevices]);
 
     const handleDeleteFaculty = async () => {
         if (window.confirm('Are you sure you want to delete this faculty member?')) {

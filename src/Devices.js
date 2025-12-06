@@ -646,7 +646,7 @@ const DeviceDetail = () => {
                                 <option value="active">Active</option>
                                 <option value="dead_stock">Dead Stock</option>
                             </select>
-                            <select name="lab_id" value={editedDevice.lab_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={editedDevice.faculty_id}>
+                            <select name="lab_id" value={editedDevice.lab_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="">Assign to Lab (Optional)</option>
                                 {hodCabinLabId && (
                                     <option value={hodCabinLabId}>Assign to HOD Cabin</option>
@@ -655,15 +655,12 @@ const DeviceDetail = () => {
                                     <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
                                 ))}
                             </select>
-                            <select name="faculty_id" value={editedDevice.faculty_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" disabled={editedDevice.lab_id || device.faculty_id !== null}>
+                            <select name="faculty_id" value={editedDevice.faculty_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="">Assign to Faculty (Optional)</option>
                                 {faculty.map(fac => (
                                     <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
                                 ))}
                             </select>
-                            {device.faculty_id !== null && (
-                                <p className="text-xs text-gray-500 col-span-2">This device is already assigned. Please "Deselect Device" first to re-assign.</p>
-                            )}
                         </div>
                         <div className="flex justify-end mt-6">
                             <button onClick={handleUpdateDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">

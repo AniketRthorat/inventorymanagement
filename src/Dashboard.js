@@ -24,34 +24,23 @@ const Dashboard = () => {
     const [modalContent, setModalContent] = useState([]);
     const [modalLoading, setModalLoading] = useState(false);
     const [modalError, setModalError] = useState(null);
+    const [labs, setLabs] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             console.log('Fetching dashboard data...');
             try {
-                // Fetch stats
+                // Fetch all dashboard stats, including computersByLab
                 const statsResponse = await api.get('/dashboard');
-                setStats(statsResponse.data);
-                console.log('Dashboard stats fetched:', statsResponse.data);
+                const data = statsResponse.data;
+                setStats(data);
+                setComputersByLab(data.computersByLab || []);
 
-                // Fetch labs and devices to calculate computers by lab
-                const [labsResponse, devicesResponse] = await Promise.all([
-                    api.get('/labs'),
-                    api.get('/devices'), // Fetch all devices, then filter
-                ]);
-                console.log('Labs fetched:', labsResponse.data);
-                console.log('Devices fetched:', devicesResponse.data);
-
-                const labs = labsResponse.data;
-                const devices = devicesResponse.data;
-
-                const labCounts = labs.map(lab => {
-                    const count = devices.filter(device => device.lab_id === lab.lab_id).length;
-                    return { lab: lab.lab_name, count, lab_id: lab.lab_id }; // Add lab_id
-                });
-
-                setComputersByLab(labCounts);
-                console.log('Computers by lab calculated:', labCounts);
+                // We still need labs for the modal
+                const labsResponse = await api.get('/labs');
+                setLabs(labsResponse.data);
+                
+                console.log('Dashboard data fetched:', data);
             } catch (err) {
                 setError('Failed to fetch dashboard data.');
                 console.error('Error fetching dashboard data:', err);
@@ -209,7 +198,7 @@ const Dashboard = () => {
                                 <tr key={item.device_id} className="border-b border-gray-200">
                                     <td className="px-4 py-2">{item.device_name}</td>
                                     <td className="px-4 py-2">{item.device_type}</td>
-                                    <td className="px-4 py-2">{item.lab_location || 'N/A'}</td>
+                                    <td className="px-4 py-2">{ labs.find(l => l.lab_id === item.lab_id)?.location || item.lab_location || 'N/A' }</td>
                                     <td className="px-4 py-2">{item.status}</td>
                                 </tr>
                             ))}
@@ -269,7 +258,7 @@ const Dashboard = () => {
                 <h2 className="text-2xl font-semibold text-gray-800">Dashboard Overview</h2>
             </div>
 
-            <div className="grid grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {summaryCards.map((card) => (
                     <div
                         key={card.label}
@@ -285,7 +274,7 @@ const Dashboard = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Systems by Lab</h3>
                     <div className="space-y-3">
@@ -324,7 +313,7 @@ const Dashboard = () => {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/2 max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-1/2 max-h-[80vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">{modalTitle}</h3>
                             <button

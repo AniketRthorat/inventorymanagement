@@ -80,7 +80,7 @@ const FacultyList = () => {
         </button>
       </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {faculty.map((fac) => (
           <div
             key={fac.faculty_id}
@@ -103,7 +103,7 @@ const FacultyList = () => {
       </div>
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+          <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-gray-800">Add New Faculty</h3>
               <button
@@ -245,7 +245,7 @@ const FacultyDetail = () => {
             </div>
 
             <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
-                <div className="flex items-start gap-6 mb-8">
+                <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
                     <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <Users size={48} className="text-blue-600" />
                     </div>
@@ -309,7 +309,7 @@ const FacultyDetail = () => {
 
             {isEditModalOpen && editedFaculty && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Edit Faculty</h3>
                             <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">

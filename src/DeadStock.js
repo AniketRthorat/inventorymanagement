@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Monitor, Printer, ChevronRight, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import api from './api';
+import api, { API_BASE_URL } from './api';
 
 const DeadStock = () => {
     const navigate = useNavigate();
@@ -112,7 +112,7 @@ const DeadStock = () => {
                                     <td className="px-6 py-4">
                                         {item.has_invoice_pdf ? (
                                             <a
-                                                href={`http://localhost:8787/api/devices/${item.device_id}/invoice`}
+                                                href={`${API_BASE_URL}devices/${item.device_id}/invoice`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"

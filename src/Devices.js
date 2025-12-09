@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2 } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
-import api from './api';
+import api, { API_BASE_URL } from './api';
 
 // DeviceList component to display all devices
 const DeviceList = () => {
@@ -36,13 +36,8 @@ const DeviceList = () => {
 
   useEffect(() => {
     fetchDevices();
+    fetchLabsAndFacultyAndHodCabin();
   }, []);
-
-  useEffect(() => {
-    if (isModalOpen) {
-      fetchLabsAndFacultyAndHodCabin();
-    }
-  }, [isModalOpen]);
 
   const fetchDevices = async () => {
     try {
@@ -134,10 +129,11 @@ const DeviceList = () => {
         });
         fetchDevices(); // Refresh the list
     } catch (err) {
-        const errorMessage = 'Failed to add device. Please fill all mandatory fields.';
+        const backendError = err.response && err.response.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : 'An unexpected error occurred.';
+        const errorMessage = `Failed to add device: ${backendError}`;
         setError(errorMessage);
         window.alert(errorMessage);
-        console.error('Error adding device:', err);
+        console.error('Error adding device:', err.response ? err.response.data : err);
     }
   };
 
@@ -184,8 +180,8 @@ const DeviceList = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div className="relative w-1/3">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div className="relative w-full md:w-1/3">
           <input
             type="text"
             placeholder="Search by Type, Name, or Company..."
@@ -207,7 +203,8 @@ const DeviceList = () => {
       </div>
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+            <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Type</th>
@@ -261,10 +258,11 @@ const DeviceList = () => {
             })}
           </tbody>
         </table>
+        </div>
       </div>
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-2xl p-8 w-2/3">
+          <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-2/3">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold text-gray-800">Add New Device</h3>
               <button
@@ -274,7 +272,7 @@ const DeviceList = () => {
                 <X size={20} className="text-gray-600" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <select name="device_type" value={newDevice.device_type} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 <option value="laptop">Laptop</option>
                 <option value="desktop">Desktop</option>
@@ -557,7 +555,7 @@ const DeviceDetail = () => {
             </div>
 
             <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
-                <div className="flex items-start gap-6 mb-8">
+                <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
                     <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         {getDeviceIcon(device.device_type)}
                     </div>
@@ -578,7 +576,7 @@ const DeviceDetail = () => {
                         <p className="text-sm text-gray-600">Assigned Faculty: {assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</p>
                         <p className="text-sm text-gray-600">Invoice Number: {device.invoice_number}</p>
                         {device.invoice_pdf && (
-                            <a href={`http://localhost:8787/api/devices/${device.device_id}/invoice`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-medium">
+                            <a href={`${API_BASE_URL}devices/${device.device_id}/invoice`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-medium">
                                 Download Invoice
                             </a>
                         )}
@@ -594,7 +592,7 @@ const DeviceDetail = () => {
                         <Users size={18} />
                         Reassign Device
                     </button>
-                    <button onClick={() => setIsDeadStockModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    <button onClick={handleOpenDeadStockModal} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
                         <Trash2 size={18} />
                         Mark as Dead Stock
                     </button>
@@ -608,14 +606,14 @@ const DeviceDetail = () => {
             {/* Edit Device Modal */}
             {isEditModalOpen && editedDevice && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-2/3">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-2/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Edit Device</h3>
                             <button onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X size={20} className="text-gray-600" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <select name="device_type" value={editedDevice.device_type} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="laptop">Laptop</option>
                                 <option value="desktop">Desktop</option>
@@ -674,7 +672,7 @@ const DeviceDetail = () => {
             {/* Reassign Device Modal */}
             {isReassignModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Reassign Device</h3>
                             <button onClick={() => setIsReassignModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -701,7 +699,7 @@ const DeviceDetail = () => {
             {/* Mark as Dead Stock Modal */}
             {isDeadStockModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Mark as Dead Stock</h3>
                             <button onClick={() => setIsDeadStockModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -730,7 +728,7 @@ const DeviceDetail = () => {
             {/* Mark Parts as Dead Stock Modal (for Desktops) */}
             {isDeadStockPartsModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-1/3">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Mark Desktop Parts as Dead Stock</h3>
                             <button onClick={() => setIsDeadStockPartsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -739,7 +737,7 @@ const DeviceDetail = () => {
                         </div>
                         <div className="space-y-4">
                             <p>Select the defective parts from this desktop set to move to dead stock.</p>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {Object.keys(deadStockParts).map(part => (
                                     <label key={part} className="flex items-center space-x-2">
                                         <input

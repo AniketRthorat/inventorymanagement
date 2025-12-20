@@ -1,42 +1,210 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2 } from 'lucide-react';
-import { useNavigate, useParams, Routes, Route } from 'react-router-dom';
+import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot } from 'lucide-react';
+import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
 import api, { API_BASE_URL } from './api';
+
+const AddDeviceForm = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    
+    const queryParams = new URLSearchParams(location.search);
+    const labIdFromQuery = queryParams.get('labId');
+    const facultyIdFromQuery = queryParams.get('facultyId');
+
+    const [labs, setLabs] = useState([]);
+    const [faculty, setFaculty] = useState([]);
+    const [hodCabinLabId, setHodCabinLabId] = useState(null);
+    const [error, setError] = useState(null);
+    const [newDevice, setNewDevice] = useState({
+        device_name: '',
+        device_type: 'laptop',
+        status: 'active',
+        lab_id: labIdFromQuery || null,
+        faculty_id: facultyIdFromQuery || null,
+        ram: '',
+        storage: '',
+        cpu: '',
+        ip_generation: '',
+        last_maintenance_date: '',
+        ink_levels: '',
+        display_size: '',
+        company: '',
+        labels: '',
+        invoice_number: '',
+        invoice_pdf: null,
+    });
+    
+    useEffect(() => {
+        fetchLabsAndFacultyAndHodCabin();
+    }, []);
+
+    const fetchLabsAndFacultyAndHodCabin = async () => {
+        try {
+            const [labsResponse, facultyResponse, hodCabinResponse] = await Promise.all([
+                api.get('/labs'),
+                api.get('/faculty'),
+                api.get('/hod-cabin-lab-id')
+            ]);
+            const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
+            const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
+            
+            setLabs(filteredLabs);
+            setFaculty(facultyResponse.data);
+            setHodCabinLabId(fetchedHodCabinLabId);
+        } catch (err) {
+            console.error('Error fetching labs, faculty or HOD Cabin ID:', err);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value, files } = e.target;
+        if (name === 'invoice_pdf') {
+            setNewDevice({ ...newDevice, invoice_pdf: files[0] });
+        } else {
+            setNewDevice({ ...newDevice, [name]: value });
+        }
+    };
+
+    const handleAddDevice = async () => {
+        setError(null);
+        try {
+            if (!newDevice.device_name || !newDevice.device_type || !newDevice.status) {
+                const errorMessage = 'Please fill all mandatory fields.';
+                window.alert(errorMessage);
+                return;
+            }
+            // Client-side validation for PDF size
+            if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
+                setError('Invoice PDF size cannot exceed 1MB.');
+                return;
+            }
+
+            const formData = new FormData();
+            Object.keys(newDevice).forEach(key => {
+                if (key === 'invoice_pdf' && newDevice[key]) {
+                    formData.append(key, newDevice[key]);
+                } else if (newDevice[key] !== null && newDevice[key] !== '' && key !== 'lab_location') { // Exclude lab_location
+                    formData.append(key, newDevice[key]);
+                }
+            });
+
+            await api.post('/devices', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (labIdFromQuery) {
+                navigate(`/labs/${labIdFromQuery}`);
+            } else if (facultyIdFromQuery) {
+                navigate(`/faculty/${facultyIdFromQuery}`);
+            }
+            else {
+                navigate('/devices');
+            }
+        } catch (err) {
+            const backendError = err.response && err.response.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : 'An unexpected error occurred.';
+            const errorMessage = `Failed to add device: ${backendError}`;
+            setError(errorMessage);
+            window.alert(errorMessage);
+            console.error('Error adding device:', err.response ? err.response.data : err);
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-2/3 mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">Add New Device</h3>
+              <button
+                onClick={() => navigate(labIdFromQuery ? `/labs/${labIdFromQuery}` : facultyIdFromQuery ? `/faculty/${facultyIdFromQuery}` : '/devices')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <select name="device_type" value={newDevice.device_type} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop</option>
+                <option value="mouse">Mouse</option>
+                <option value="keyboard">Keyboard</option>
+                <option value="monitor">Monitor</option>
+                <option value="printer">Printer</option>
+                <option value="server">Server</option>
+                <option value="digital_board">Digital Board</option>
+                <option value="pointer">Pointer</option>
+                <option value="projector">Projector</option>
+                <option value="cpu">CPU</option>
+              </select>
+              <input type="text" name="device_name" placeholder="Device Name" value={newDevice.device_name} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <input type="text" name="company" placeholder="Company" value={newDevice.company} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <input type="text" name="labels" placeholder="Labels (comma-separated)" value={newDevice.labels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <input type="text" name="invoice_number" placeholder="Invoice Number" value={newDevice.invoice_number} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <div className="flex flex-col">
+                <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 1MB)</label>
+                <input type="file" id="invoice_pdf" name="invoice_pdf" onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              </div>
+              {(newDevice.device_type === 'desktop' || newDevice.device_type === 'laptop') && (
+                <>
+                  <input type="number" name="ram" placeholder="RAM (GB)" value={newDevice.ram} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="number" name="storage" placeholder="Storage (GB)" value={newDevice.storage} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="cpu" placeholder="CPU" value={newDevice.cpu} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" name="ip_generation" placeholder="IP Generation" value={newDevice.ip_generation} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="number" name="display_size" placeholder="Display Size (inches)" value={newDevice.display_size} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                </>
+              )}
+              {newDevice.device_type === 'printer' && (
+                <input type="number" name="ink_levels" placeholder="Ink Levels (for printers)" value={newDevice.ink_levels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              )}
+              <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={newDevice.last_maintenance_date} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+              <select name="status" value={newDevice.status} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                <option value="active">Active</option>
+                <option value="dead_stock">Dead Stock</option>
+              </select>
+              { !labIdFromQuery && !facultyIdFromQuery && (
+                <>
+                    <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Assign to Lab (Optional)</option>
+                        {hodCabinLabId && (
+                            <option value={hodCabinLabId}>Assign to HOD Cabin</option>
+                        )}
+                        {labs.map(lab => (
+                            <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
+                        ))}
+                    </select>
+
+                    <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Assign to Faculty (Optional)</option>
+                        {faculty.map(fac => (
+                            <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
+                        ))}
+                    </select>
+                </>
+              )}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button onClick={handleAddDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                Add Device
+              </button>
+            </div>
+          </div>
+    );
+};
 
 // DeviceList component to display all devices
 const DeviceList = () => {
   const [devices, setDevices] = useState([]);
   const [labs, setLabs] = useState([]);
   const [faculty, setFaculty] = useState([]);
-  const [hodCabinLabId, setHodCabinLabId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [newDevice, setNewDevice] = useState({
-    device_name: '',
-    device_type: 'laptop',
-    status: 'active',
-    lab_id: null,
-    faculty_id: null,
-    ram: '',
-    storage: '',
-    cpu: '',
-    ip_generation: '',
-    last_maintenance_date: '',
-    ink_levels: '',
-    display_size: '',
-    lab_location: '',
-    company: '',
-    labels: '',
-    invoice_number: '',
-    invoice_pdf: null,
-  });
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchDevices();
-    fetchLabsAndFacultyAndHodCabin();
+    fetchLabsAndFaculty();
   }, []);
 
   const fetchDevices = async () => {
@@ -51,96 +219,23 @@ const DeviceList = () => {
     }
   };
 
-  const fetchLabsAndFacultyAndHodCabin = async () => {
+  const fetchLabsAndFaculty = async () => {
     try {
-      const [labsResponse, facultyResponse, hodCabinResponse] = await Promise.all([
+      const [labsResponse, facultyResponse] = await Promise.all([
         api.get('/labs'),
         api.get('/faculty'),
-        api.get('/hod-cabin-lab-id')
       ]);
-      const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
-      const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
-      
-      setLabs(filteredLabs);
+      setLabs(labsResponse.data);
       setFaculty(facultyResponse.data);
-      setHodCabinLabId(fetchedHodCabinLabId);
     } catch (err) {
-      console.error('Error fetching labs, faculty or HOD Cabin ID:', err);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'invoice_pdf') {
-        setNewDevice({ ...newDevice, invoice_pdf: files[0] });
-    } else {
-        setNewDevice({ ...newDevice, [name]: value });
-    }
-  };
-
-  const handleAddDevice = async () => {
-    setError(null);
-    try {
-        if (!newDevice.device_name || !newDevice.device_type || !newDevice.status) {
-            const errorMessage = 'Please fill all mandatory fields.';
-            window.alert(errorMessage);
-            return;
-        }
-        // Client-side validation for PDF size
-        if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
-            setError('Invoice PDF size cannot exceed 1MB.');
-            return;
-        }
-
-        const formData = new FormData();
-        Object.keys(newDevice).forEach(key => {
-            if (key === 'invoice_pdf' && newDevice[key]) {
-                formData.append(key, newDevice[key]);
-            } else if (newDevice[key] !== null && newDevice[key] !== '') {
-                formData.append(key, newDevice[key]);
-            }
-        });
-
-        await api.post('/devices', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-
-        setIsModalOpen(false);
-        setNewDevice({
-            device_name: '',
-            device_type: 'laptop',
-            status: 'active',
-            lab_id: null,
-            faculty_id: null,
-            ram: '',
-            storage: '',
-            cpu: '',
-            gpu: '',
-            last_maintenance_date: '',
-            ink_levels: '',
-            display_size: '',
-            lab_location: '',
-            company: '',
-            labels: '',
-            invoice_number: '',
-            invoice_pdf: null,
-        });
-        fetchDevices(); // Refresh the list
-    } catch (err) {
-        const backendError = err.response && err.response.data ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data)) : 'An unexpected error occurred.';
-        const errorMessage = `Failed to add device: ${backendError}`;
-        setError(errorMessage);
-        window.alert(errorMessage);
-        console.error('Error adding device:', err.response ? err.response.data : err);
+      console.error('Error fetching labs or faculty:', err);
     }
   };
 
   const getDeviceIcon = (type) => {
     switch (type) {
       case 'desktop':
-        return <Monitor size={20} />;
+        return <MonitorDot size={20} />;
       case 'laptop':
         return <Laptop size={20} />;
       case 'printer':
@@ -168,15 +263,19 @@ const DeviceList = () => {
 
   const filteredDevices = devices.filter(device => {
     const query = searchQuery.toLowerCase();
+    const lab = labs.find(l => l.lab_id === device.lab_id);
+    const facultyMember = faculty.find(f => f.faculty_id === device.faculty_id);
+
     return (
       device.device_name.toLowerCase().includes(query) ||
       device.device_type.toLowerCase().includes(query) ||
-      (device.company && device.company.toLowerCase().includes(query))
+      (device.company && device.company.toLowerCase().includes(query)) ||
+      (lab && lab.lab_name.toLowerCase().includes(query)) ||
+      (facultyMember && facultyMember.faculty_name.toLowerCase().includes(query))
     );
   });
 
   if (loading) return <div>Loading devices...</div>;
-  if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
   return (
     <div>
@@ -194,7 +293,7 @@ const DeviceList = () => {
           </div>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => navigate('/devices/add')}
           className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
         >
           <Plus size={18} />
@@ -204,19 +303,19 @@ const DeviceList = () => {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-auto">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Type</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Company</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Location</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Assigned To</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Storage</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">RAM</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Company</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Location</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Assigned To</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Storage</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">RAM</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+              <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -232,20 +331,20 @@ const DeviceList = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-800 font-medium">{device.device_name}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.company}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{assignedLab ? assignedLab.lab_name : 'N/A'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.storage} GB</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.ram} GB</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{device.invoice_number}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4 text-gray-600 text-sm">{device.company}</td>
+                  <td className="px-3 py-4 text-gray-600 text-sm">{assignedLab ? assignedLab.lab_name : 'N/A'}</td>
+                  <td className="px-3 py-4 text-gray-600 text-sm">{assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</td>
+                  <td className="px-3 py-4 text-gray-600 text-sm">{device.storage} GB</td>
+                  <td className="px-3 py-4 text-gray-600 text-sm">{device.ram} GB</td>
+                  <td className="px-3 py-4 text-gray-600 text-sm">{device.invoice_number}</td>
+                  <td className="px-3 py-4">
                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                         device.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                     }`}>
                         {device.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-3 py-4">
                     <button
                       onClick={() => navigate(`/devices/${device.device_id}`)}
                       className="text-blue-600 hover:text-blue-800 font-medium"
@@ -260,82 +359,6 @@ const DeviceList = () => {
         </table>
         </div>
       </div>
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-          <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-2/3">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-800">Add New Device</h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X size={20} className="text-gray-600" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <select name="device_type" value={newDevice.device_type} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="laptop">Laptop</option>
-                <option value="desktop">Desktop</option>
-                <option value="mouse">Mouse</option>
-                <option value="keyboard">Keyboard</option>
-                <option value="monitor">Monitor</option>
-                <option value="printer">Printer</option>
-                <option value="server">Server</option>
-                <option value="digital_board">Digital Board</option>
-                <option value="pointer">Pointer</option>
-                <option value="projector">Projector</option>
-                <option value="cpu">CPU</option>
-              </select>
-              <input type="text" name="device_name" placeholder="Device Name" value={newDevice.device_name} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <input type="text" name="company" placeholder="Company" value={newDevice.company} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <input type="text" name="labels" placeholder="Labels (comma-separated)" value={newDevice.labels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <input type="text" name="lab_location" placeholder="Lab Location" value={newDevice.lab_location} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <input type="text" name="invoice_number" placeholder="Invoice Number" value={newDevice.invoice_number} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <div className="flex flex-col">
-                <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 1MB)</label>
-                <input type="file" id="invoice_pdf" name="invoice_pdf" onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              </div>
-              {(newDevice.device_type === 'desktop' || newDevice.device_type === 'laptop') && (
-                <>
-                  <input type="number" name="ram" placeholder="RAM (GB)" value={newDevice.ram} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                  <input type="number" name="storage" placeholder="Storage (GB)" value={newDevice.storage} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                  <input type="text" name="cpu" placeholder="CPU" value={newDevice.cpu} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                  <input type="text" name="ip_generation" placeholder="IP Generation" value={newDevice.ip_generation} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                  <input type="number" name="display_size" placeholder="Display Size (inches)" value={newDevice.display_size} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                </>
-              )}
-              {newDevice.device_type === 'printer' && (
-                <input type="number" name="ink_levels" placeholder="Ink Levels (for printers)" value={newDevice.ink_levels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              )}
-              <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={newDevice.last_maintenance_date} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-              <select name="status" value={newDevice.status} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="active">Active</option>
-                <option value="dead_stock">Dead Stock</option>
-              </select>
-              <select name="lab_id" value={newDevice.lab_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="">Assign to Lab (Optional)</option>
-                {hodCabinLabId && (
-                  <option value={hodCabinLabId}>Assign to HOD Cabin</option>
-                )}
-                {labs.map(lab => (
-                  <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
-                ))}
-              </select>
-              <select name="faculty_id" value={newDevice.faculty_id || ''} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                <option value="">Assign to Faculty (Optional)</option>
-                {faculty.map(fac => (
-                  <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end mt-6">
-              <button onClick={handleAddDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                Add Device
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -352,6 +375,7 @@ const DeviceDetail = () => {
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
+    const [isReassignLabModalOpen, setIsReassignLabModalOpen] = useState(false);
     const [isDeadStockModalOpen, setIsDeadStockModalOpen] = useState(false);
     const [isDeadStockPartsModalOpen, setIsDeadStockPartsModalOpen] = useState(false);
     const [deadStockParts, setDeadStockParts] = useState({
@@ -363,6 +387,7 @@ const DeviceDetail = () => {
     const [deadStockRemark, setDeadStockRemark] = useState('');
     const [editedDevice, setEditedDevice] = useState(null);
     const [reassignFacultyId, setReassignFacultyId] = useState('');
+    const [reassignLabId, setReassignLabId] = useState('');
 
     const fetchDeviceDetails = useCallback(async () => {
         try {
@@ -377,33 +402,37 @@ const DeviceDetail = () => {
         }
     }, [id]);
 
-    useEffect(() => {
-        fetchDeviceDetails();
-    }, [fetchDeviceDetails]);
-
-    useEffect(() => {
-        if (isReassignModalOpen) {
-            fetchLabsAndFacultyAndHodCabin();
-        }
-    }, [isReassignModalOpen]);
-
-    const fetchLabsAndFacultyAndHodCabin = async () => {
+    const fetchLabsAndFacultyAndHodCabin = useCallback(async () => {
         try {
             const [labsResponse, facultyResponse, hodCabinResponse] = await Promise.all([
                 api.get('/labs'),
                 api.get('/faculty'),
                 api.get('/hod-cabin-lab-id')
             ]);
-            const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
-            const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
-            
-            setLabs(filteredLabs);
+            setLabs(labsResponse.data);
             setFaculty(facultyResponse.data);
-            setHodCabinLabId(fetchedHodCabinLabId);
+            setHodCabinLabId(hodCabinResponse.data.hodCabinLabId);
         } catch (err) {
             console.error('Error fetching labs, faculty or HOD Cabin ID:', err);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchDeviceDetails();
+        fetchLabsAndFacultyAndHodCabin();
+    }, [fetchDeviceDetails, fetchLabsAndFacultyAndHodCabin]);
+
+    useEffect(() => {
+        if (isEditModalOpen) {
+            fetchLabsAndFacultyAndHodCabin();
+        }
+    }, [isEditModalOpen, fetchLabsAndFacultyAndHodCabin]);
+
+    useEffect(() => {
+        if (isReassignModalOpen) {
+            fetchLabsAndFacultyAndHodCabin();
+        }
+    }, [isReassignModalOpen, fetchLabsAndFacultyAndHodCabin]);
 
     const handleEditInputChange = (e) => {
         const { name, value } = e.target;
@@ -415,8 +444,6 @@ const DeviceDetail = () => {
         try {
             const payload = {
                 ...editedDevice,
-                lab_id: editedDevice.lab_id ? parseInt(editedDevice.lab_id) : null,
-                faculty_id: editedDevice.faculty_id ? parseInt(editedDevice.faculty_id) : null,
                 ram: editedDevice.ram ? parseInt(editedDevice.ram) : null,
                 storage: editedDevice.storage ? parseInt(editedDevice.storage) : null,
                 ink_levels: editedDevice.ink_levels ? parseInt(editedDevice.ink_levels) : null,
@@ -452,6 +479,18 @@ const DeviceDetail = () => {
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to reassign device.');
             console.error('Error reassigning device:', err);
+        }
+    };
+
+    const handleReassignDeviceToLab = async () => {
+        setError(null);
+        try {
+            await api.put(`/devices/${id}/reassign-lab`, { lab_id: parseInt(reassignLabId) });
+            setIsReassignLabModalOpen(false);
+            fetchDeviceDetails(); // Refresh details
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to reassign device to lab.');
+            console.error('Error reassigning device to lab:', err);
         }
     };
 
@@ -518,7 +557,7 @@ const DeviceDetail = () => {
     const getDeviceIcon = (type) => {
         switch (type) {
           case 'desktop':
-            return <Monitor size={40} />;
+            return <MonitorDot size={40} />;
           case 'laptop':
             return <Laptop size={40} />;
           case 'printer':
@@ -570,7 +609,9 @@ const DeviceDetail = () => {
                         <p className="text-sm text-gray-600 mb-1">RAM: {device.ram} GB</p>
                         <p className="text-sm text-gray-600 mb-1">Storage: {device.storage} GB</p>
                         <p className="text-sm text-gray-600 mb-1">Display Size: {device.display_size} inches</p>
-                        <p className="text-sm text-gray-600 mb-1">Ink Levels: {device.ink_levels}%</p>
+                        {device.device_type === 'printer' && (
+                            <p className="text-sm text-gray-600 mb-1">Ink Levels: {device.ink_levels}%</p>
+                        )}
                         <p className="text-sm text-gray-600 mb-1">Last Maintenance: {device.last_maintenance_date}</p>
                         <p className="text-sm text-gray-600 mb-1">Assigned Lab: {assignedLab ? assignedLab.lab_name : 'N/A'}</p>
                         <p className="text-sm text-gray-600">Assigned Faculty: {assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</p>
@@ -590,7 +631,11 @@ const DeviceDetail = () => {
                     </button>
                     <button onClick={() => setIsReassignModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium">
                         <Users size={18} />
-                        Reassign Device
+                        Reassign Device to Faculty
+                    </button>
+                    <button onClick={() => setIsReassignLabModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors font-medium">
+                        <Users size={18} />
+                        Reassign to Lab
                     </button>
                     <button onClick={handleOpenDeadStockModal} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
                         <Trash2 size={18} />
@@ -614,7 +659,7 @@ const DeviceDetail = () => {
                             </button>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <select name="device_type" value={editedDevice.device_type} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <select name="device_type" value={editedDevice.device_type ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="laptop">Laptop</option>
                                 <option value="desktop">Desktop</option>
                                 <option value="mouse">Mouse</option>
@@ -622,42 +667,31 @@ const DeviceDetail = () => {
                                 <option value="monitor">Monitor</option>
                                 <option value="printer">Printer</option>
                                 <option value="server">Server</option>
+                                <option value="digital_board">Digital Board</option>
+                                <option value="pointer">Pointer</option>
+                                <option value="projector">Projector</option>
+                                <option value="cpu">CPU</option>
                             </select>
-                            <input type="text" name="device_name" placeholder="Device Name" value={editedDevice.device_name} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                            <input type="text" name="company" placeholder="Company" value={editedDevice.company} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                            <input type="text" name="labels" placeholder="Labels (comma-separated)" value={editedDevice.labels} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                            <input type="text" name="lab_location" placeholder="Lab Location" value={editedDevice.lab_location} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <input type="text" name="device_name" placeholder="Device Name" value={editedDevice.device_name ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <input type="text" name="company" placeholder="Company" value={editedDevice.company ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <input type="text" name="labels" placeholder="Labels (comma-separated)" value={editedDevice.labels ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <input type="text" name="lab_location" placeholder="Lab Location" value={editedDevice.lab_location ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             {(editedDevice.device_type === 'desktop' || editedDevice.device_type === 'laptop') && (
                                 <>
-                                    <input type="number" name="ram" placeholder="RAM (GB)" value={editedDevice.ram} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                                    <input type="number" name="storage" placeholder="Storage (GB)" value={editedDevice.storage} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                                    <input type="text" name="cpu" placeholder="CPU" value={editedDevice.cpu} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                                    <input type="text" name="ip_generation" placeholder="IP Generation" value={editedDevice.ip_generation} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                                    <input type="number" name="display_size" placeholder="Display Size (inches)" value={editedDevice.display_size} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="number" name="ram" placeholder="RAM (GB)" value={editedDevice.ram ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="number" name="storage" placeholder="Storage (GB)" value={editedDevice.storage ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="cpu" placeholder="CPU" value={editedDevice.cpu ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="ip_generation" placeholder="IP Generation" value={editedDevice.ip_generation ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                    <input type="number" name="display_size" placeholder="Display Size (inches)" value={editedDevice.display_size ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                                 </>
                             )}
                             {editedDevice.device_type === 'printer' && (
-                                <input type="number" name="ink_levels" placeholder="Ink Levels (for printers)" value={editedDevice.ink_levels} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                                <input type="number" name="ink_levels" placeholder="Ink Levels (for printers)" value={editedDevice.ink_levels ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             )}
-                            <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={editedDevice.last_maintenance_date} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
-                            <select name="status" value={editedDevice.status} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={editedDevice.last_maintenance_date ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <select name="status" value={editedDevice.status ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="active">Active</option>
                                 <option value="dead_stock">Dead Stock</option>
-                            </select>
-                            <select name="lab_id" value={editedDevice.lab_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                <option value="">Assign to Lab (Optional)</option>
-                                {hodCabinLabId && (
-                                    <option value={hodCabinLabId}>Assign to HOD Cabin</option>
-                                )}
-                                {labs.map(lab => (
-                                    <option key={`lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
-                                ))}
-                            </select>
-                            <select name="faculty_id" value={editedDevice.faculty_id || ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                <option value="">Assign to Faculty (Optional)</option>
-                                {faculty.map(fac => (
-                                    <option key={`faculty-${fac.faculty_id}`} value={fac.faculty_id}>{fac.faculty_name}</option>
-                                ))}
                             </select>
                         </div>
                         <div className="flex justify-end mt-6">
@@ -674,7 +708,7 @@ const DeviceDetail = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
                     <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold text-gray-800">Reassign Device</h3>
+                            <h3 className="text-xl font-semibold text-gray-800">Reassign Device to Faculty</h3>
                             <button onClick={() => setIsReassignModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X size={20} className="text-gray-600" />
                             </button>
@@ -689,6 +723,33 @@ const DeviceDetail = () => {
                         </div>
                         <div className="flex justify-end mt-6">
                             <button onClick={handleReassignDevice} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                Reassign
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reassign to Lab Modal */}
+            {isReassignLabModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-semibold text-gray-800">Reassign to Lab</h3>
+                            <button onClick={() => setIsReassignLabModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <select name="reassignLabId" value={reassignLabId} onChange={(e) => setReassignLabId(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Select Lab to Reassign</option>
+                                {labs.map(lab => (
+                                    <option key={`reassign-lab-${lab.lab_id}`} value={lab.lab_id}>{lab.lab_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex justify-end mt-6">
+                            <button onClick={handleReassignDeviceToLab} className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                                 Reassign
                             </button>
                         </div>
@@ -727,7 +788,7 @@ const DeviceDetail = () => {
 
             {/* Mark Parts as Dead Stock Modal (for Desktops) */}
             {isDeadStockPartsModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
+                <div className="fixed inset-0 bg-black bg-opacity_30 z-20 flex justify-center items-center">
                     <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-xl font-semibold text-gray-800">Mark Desktop Parts as Dead Stock</h3>
@@ -777,6 +838,7 @@ const Devices = () => {
     return (
         <Routes>
             <Route path="/" element={<DeviceList />} />
+            <Route path="/add" element={<AddDeviceForm />} />
             <Route path=":id" element={<DeviceDetail />} />
         </Routes>
     );

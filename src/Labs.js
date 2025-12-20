@@ -44,6 +44,14 @@ const Labs = () => {
 
   const handleAddLab = async () => {
     setError(null);
+    const existingLab = labs.find(
+      (lab) => lab.lab_name.toLowerCase() === newLab.lab_name.toLowerCase()
+    );
+
+    if (existingLab) {
+      alert('lab already exist');
+      return;
+    }
     try {
       await api.post('/labs', newLab);
       setIsModalOpen(false);

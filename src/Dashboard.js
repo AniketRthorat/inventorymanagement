@@ -1,7 +1,7 @@
-// inventory-management/src/Dashboard.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Monitor, Users, Printer, HardDrive, X, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard } from 'lucide-react'; // Import X for close button
+import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot } from 'lucide-react'; // Import X for close button
 import api from './api'; // Import the API client
+import InfoModal from './InfoModal';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -14,39 +14,25 @@ const Dashboard = () => {
         totalKeyboards: 0,
         computersByStatus: {}, // Initialize with an empty object
     });
-    const [computersByLab, setComputersByLab] = useState([]);
+    const [devicesByLab, setDevicesByLab] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalContent, setModalContent] = useState({ title: '', items: [] });
 
-    // Modal state
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalContent, setModalContent] = useState([]);
-    const [modalLoading, setModalLoading] = useState(false);
-    const [modalError, setModalError] = useState(null);
-    const [labs, setLabs] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
-            console.log('Fetching dashboard data...');
             try {
-                // Fetch all dashboard stats, including computersByLab
+                // Fetch all dashboard stats
                 const statsResponse = await api.get('/dashboard');
                 const data = statsResponse.data;
                 setStats(data);
-                setComputersByLab(data.computersByLab || []);
+                setDevicesByLab(data.devicesByLab || []);
 
-                // We still need labs for the modal
-                const labsResponse = await api.get('/labs');
-                setLabs(labsResponse.data);
-                
-                console.log('Dashboard data fetched:', data);
             } catch (err) {
-                setError('Failed to fetch dashboard data.');
-                console.error('Error fetching dashboard data:', err);
+                window.alert('Failed to fetch dashboard data.');
             } finally {
                 setLoading(false);
-                console.log('Dashboard loading state set to false.');
             }
         };
 
@@ -54,11 +40,7 @@ const Dashboard = () => {
     }, []);
 
     const handleCardClick = useCallback(async (type, filter = {}) => {
-        setModalLoading(true);
-        setModalError(null);
-        setModalContent([]);
         try {
-            let response;
             let title = '';
             let apiResponse; // To hold the full response object
             let items = [];
@@ -71,57 +53,52 @@ const Dashboard = () => {
                             device_type: ['laptop', 'desktop', 'server', 'monitor'],
                         }
                     });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalPrinters':
                     title = 'All Printers';
                     apiResponse = await api.get('/devices', { params: { device_type: 'printer' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalDigitalBoards':
                     title = 'All Digital Boards';
                     apiResponse = await api.get('/devices', { params: { device_type: 'digital_board' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalPointers':
                     title = 'All Pointers';
                     apiResponse = await api.get('/devices', { params: { device_type: 'pointer' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalProjectors':
                     title = 'All Projectors';
                     apiResponse = await api.get('/devices', { params: { device_type: 'projector' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalCPUs':
                     title = 'All CPUs';
                     apiResponse = await api.get('/devices', { params: { device_type: 'cpu' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalMice':
                     title = 'All Mice';
                     apiResponse = await api.get('/devices', { params: { device_type: 'mouse' } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalKeyboards':
                     title = 'All Keyboards';
                     apiResponse = await api.get('/devices', { params: { device_type: 'keyboard' } });
-                    items = apiResponse.data;
-                    break;
-                case 'totalLabs':
-                    title = 'All Labs';
-                    response = await api.get('/labs'); // labs endpoint doesn't return debug info
-                    items = response.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalFaculty':
                     title = 'All Faculty';
-                    response = await api.get('/faculty'); // faculty endpoint doesn't return debug info
-                    items = response.data;
+                    apiResponse = await api.get('/faculty'); // faculty endpoint doesn't return debug info
+                    items = apiResponse.data;
                     break;
-                case 'systems_by_lab': // Special case for Systems by Lab click
+                case 'devices_by_lab':
                     title = `Devices in ${filter.lab_name}`;
                     apiResponse = await api.get('/devices', { params: { lab_id: filter.lab_id } });
-                    items = apiResponse.data;
+                    items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'systems_by_status': // Special case for Systems by Status click
                     title = `Computers: ${filter.status}`;
@@ -137,31 +114,29 @@ const Dashboard = () => {
                     title = 'Details';
                     items = [];
             }
-
-            setModalTitle(title);
-            setModalContent(items);
-            setIsModalOpen(true);
+            setModalContent({ title, items });
+            setModalVisible(true);
         } catch (err) {
-            setModalError('Failed to fetch details.');
-            console.error('Error fetching modal details:', err);
-        } finally {
-            setModalLoading(false);
+            window.alert('Failed to fetch details.');
         }
     }, []); // Consider adding api to dependency array if it changes
 
+    const handleCloseModal = () => {
+        setModalVisible(false);
+        setModalContent({ title: '', items: [] });
+    };
+
     if (loading) return <div>Loading dashboard...</div>;
-    if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
     const summaryCards = [
-        { label: 'Total Computers', value: stats.totalComputers, icon: Monitor, color: 'blue', type: 'totalComputers' },
+        { label: 'Total Computers', value: stats.totalComputers, icon: MonitorDot, color: 'blue', type: 'totalComputers' },
         { label: 'Total Printers', value: stats.totalPrinters, icon: Printer, color: 'purple', type: 'totalPrinters' },
         { label: 'Total Digital Boards', value: stats.totalDigitalBoards, icon: Presentation, color: 'pink', type: 'totalDigitalBoards' },
         { label: 'Total Pointers', value: stats.totalPointers, icon: MousePointer2, color: 'red', type: 'totalPointers' },
         { label: 'Total Projectors', value: stats.totalProjectors, icon: ProjectorIcon, color: 'yellow', type: 'totalProjectors' },
         { label: 'Total CPUs', value: stats.totalCPUs, icon: Cpu, color: 'teal', type: 'totalCPUs' },
         { label: 'Total Mice', value: stats.totalMice, icon: Mouse, color: 'orange', type: 'totalMice' },
-        { label: 'Total Keyboards', value: stats.totalKeyboards, icon: Keyboard, color: 'indigo', type: 'totalKeyboards' },
-        { label: 'Total Labs', value: stats.totalLabs, icon: HardDrive, color: 'green', type: 'totalLabs' }
+        { label: 'Total Keyboards', value: stats.totalKeyboards, icon: Keyboard, color: 'indigo', type: 'totalKeyboards' }
     ];
 
     // Build the computersByStatus array from the stats object
@@ -169,88 +144,6 @@ const Dashboard = () => {
         { status: 'Active', count: stats.computersByStatus.active || 0, type: 'systems_by_status' },
         { status: 'Dead Stock', count: stats.computersByStatus.dead_stock || 0, type: 'systems_by_status' },
     ] : [];
-
-    // Helper to render modal content based on type
-    const renderModalContent = (type, items) => {
-        if (!items || items.length === 0) return <p>No items to display.</p>;
-
-        switch (type) {
-            case 'totalComputers':
-            case 'totalPrinters':
-            case 'totalDigitalBoards': // Add this case
-            case 'totalPointers':    // Add this case
-            case 'totalProjectors':  // Add this case
-            case 'totalCPUs':        // Add this case
-            case 'systems_by_lab':
-            case 'systems_by_status':
-                return (
-                    <table className="w-full text-left table-auto">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2">Name</th>
-                                <th className="px-4 py-2">Type</th>
-                                <th className="px-4 py-2">Location</th>
-                                <th className="px-4 py-2">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map(item => (
-                                <tr key={item.device_id} className="border-b border-gray-200">
-                                    <td className="px-4 py-2">{item.device_name}</td>
-                                    <td className="px-4 py-2">{item.device_type}</td>
-                                    <td className="px-4 py-2">{ labs.find(l => l.lab_id === item.lab_id)?.location || item.lab_location || 'N/A' }</td>
-                                    <td className="px-4 py-2">{item.status}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                );
-            case 'totalLabs':
-                return (
-                    <table className="w-full text-left table-auto">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2">Lab Name</th>
-                                <th className="px-4 py-2">Location</th>
-                                <th className="px-4 py-2">Capacity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map(item => (
-                                <tr key={item.lab_id} className="border-b border-gray-200">
-                                    <td className="px-4 py-2">{item.lab_name}</td>
-                                    <td className="px-4 py-2">{item.location || 'N/A'}</td>
-                                    <td className="px-4 py-2">{item.capacity || 'N/A'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                );
-            case 'totalFaculty':
-                return (
-                    <table className="w-full text-left table-auto">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="px-4 py-2">Name</th>
-                                <th className="px-4 py-2">Email</th>
-                                <th className="px-4 py-2">Department</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {items.map(item => (
-                                <tr key={item.faculty_id} className="border-b border-gray-200">
-                                    <td className="px-4 py-2">{item.faculty_name}</td>
-                                    <td className="px-4 py-2">{item.email}</td>
-                                    <td className="px-4 py-2">{item.department || 'N/A'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                );
-            default:
-                return <p>Unknown content type.</p>;
-        }
-    };
 
     return (
         <div>
@@ -276,13 +169,13 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Systems by Lab</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Devices by Lab</h3>
                     <div className="space-y-3">
-                        {computersByLab.map((item) => (
+                        {devicesByLab.map((item) => (
                             <div
                                 key={item.lab}
                                 className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50"
-                                onClick={() => handleCardClick('systems_by_lab', { lab_id: item.lab_id })} // lab_id not directly in item
+                                onClick={() => handleCardClick('devices_by_lab', { lab_id: item.lab_id, lab_name: item.lab })}
                             >
                                 <span className="text-gray-700">{item.lab}</span>
                                 <span className="font-semibold text-blue-600">{item.count}</span>
@@ -309,32 +202,12 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-3/4 lg:w-1/2 max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold text-gray-800">{modalTitle}</h3>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X size={20} className="text-gray-600" />
-                            </button>
-                        </div>
-                        {modalLoading && <p>Loading...</p>}
-                        {modalError && <p style={{ color: 'red' }}>{modalError}</p>}
-                        {!modalLoading && !modalError && (
-                            renderModalContent(
-                                modalTitle.includes('Computers') || modalTitle.includes('Printers') || modalTitle.includes('Digital Boards') || modalTitle.includes('Pointers') || modalTitle.includes('Projectors') || modalTitle.includes('CPUs') || modalTitle.includes('Mice') || modalTitle.includes('Keyboards') || modalTitle.startsWith('Devices in') || modalTitle.startsWith('Computers:')
-                                ? 'totalComputers' // All these types render a device table
-                                : (modalTitle === 'All Labs' ? 'totalLabs' : 'totalFaculty'), // Other types render specific tables
-                                modalContent
-                            )
-                        )}
-                    </div>
-                </div>
+            {modalVisible && (
+                <InfoModal
+                    title={modalContent.title}
+                    items={modalContent.items}
+                    onClose={handleCloseModal}
+                />
             )}
         </div>
     );

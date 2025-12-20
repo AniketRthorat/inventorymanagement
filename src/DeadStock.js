@@ -1,6 +1,6 @@
 // inventory-management/src/DeadStock.js
 import React, { useState, useEffect } from 'react';
-import { Trash2, Monitor, Printer, ChevronRight, Download } from 'lucide-react';
+import { Trash2, Monitor, Printer as PrinterIcon, ChevronRight, Download, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api, { API_BASE_URL } from './api';
 
@@ -28,6 +28,35 @@ const DeadStock = () => {
         }
     };
 
+    const getDeviceIcon = (type) => {
+        switch (type) {
+          case 'desktop':
+            return <Monitor size={14} />;
+          case 'laptop':
+            return <Laptop size={14} />;
+          case 'printer':
+            return <PrinterIcon size={14} />;
+          case 'mouse':
+            return <Mouse size={14} />;
+          case 'keyboard':
+            return <Keyboard size={14} />;
+          case 'monitor':
+            return <Monitor size={14} />;
+          case 'server':
+            return <Server size={14} />;
+          case 'digital_board':
+            return <Presentation size={14} />;
+          case 'pointer':
+            return <MousePointer2 size={14} />;
+          case 'projector':
+            return <Projector size={14} />;
+          case 'cpu':
+            return <Cpu size={14} />;
+          default:
+            return null;
+        }
+    };
+
     const filteredDisplayDevices = deadStockDevices.filter(device =>
         filterType === 'All' ? true : device.device_type === filterType
     );
@@ -50,7 +79,7 @@ const DeadStock = () => {
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
                 <div className="flex items-center gap-4">
                     <span className="text-gray-700 font-medium">Filter by Type:</span>
-                    {['All', 'computer', 'printer', 'laptop'].map((type) => (
+                    {['All', 'desktop', 'printer', 'laptop', 'mouse'].map((type) => (
                         <button
                             key={type}
                             onClick={() => setFilterType(type)}
@@ -89,7 +118,7 @@ const DeadStock = () => {
                                     <td className="px-6 py-4 text-gray-800 font-medium">{item.device_name}</td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">
-                                            {item.device_type === 'computer' || item.device_type === 'laptop' ? <Monitor size={14} /> : <Printer size={14} />}
+                                            {getDeviceIcon(item.device_type)}
                                             {item.device_type}
                                         </span>
                                     </td>

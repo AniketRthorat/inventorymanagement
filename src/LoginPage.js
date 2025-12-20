@@ -15,7 +15,7 @@ const LoginPage = () => { // Corrected component definition
         e.preventDefault();
         setError('');
         
-        if (username === "labadmin" && password === "pass@123") {
+        if (username === "labadmin" && password === "cse@1644") {
             login('static_token'); // Use a dummy token for static authentication
             navigate('/dashboard');
         } else {

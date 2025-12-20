@@ -292,6 +292,12 @@ const FacultyDetail = () => {
                 </div>
 
                 <div className="space-y-3">
+                    <button
+                        onClick={() => navigate(`/devices/add?facultyId=${id}`)}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                        <Plus size={18} />
+                        Assign Device
+                    </button>
                     <button 
                         onClick={() => setIsEditModalOpen(true)}
                         className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">

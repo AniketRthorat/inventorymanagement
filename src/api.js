@@ -1,7 +1,7 @@
 // inventory-management/src/api.js
 import axios from 'axios';
 
-export const API_BASE_URL = 'https://inventory-backend.aniketthorat566.workers.dev/api/'; // Assuming backend runs on 8787
+export const API_BASE_URL = 'https://inventory-backend.cse-tech.workers.dev/api/'; // Assuming backend runs on 8787
 
 // Function to serialize parameters for Axios
 const serializeParams = (params) => {

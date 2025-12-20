@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
-import { Home, Monitor, Users, Trash2, Briefcase, FileText, Search, User, Printer, HardDrive, Package, Edit2, X, ChevronRight, Filter, Download, LogOut } from 'lucide-react';
+import { Home, Monitor, Users, Trash2, Briefcase, FileText, User, Package, LogOut } from 'lucide-react';
 
 import { useAuth } from './AuthContext';
 import PrivateRoute from './PrivateRoute';
 import LoginPage from './LoginPage';
 import Dashboard from './Dashboard';
-import Labs from './Labs'; // Existing component, will be updated later
 import LabsRoutes from './LabsRoutes'; // Import LabsRoutes
 import Faculty from './Faculty'; // Existing component, will be updated later
 import Devices from './Devices'; // Existing component, will be updated later

@@ -1,19 +1,32 @@
 // inventory-management/src/DeadStock.js
 import React, { useState, useEffect } from 'react';
-import { Trash2, Monitor, Printer as PrinterIcon, ChevronRight, Download, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2 } from 'lucide-react';
+import { Trash2, Monitor, Printer as PrinterIcon, ChevronRight, Download, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api, { API_BASE_URL } from './api';
 
 const DeadStock = () => {
     const navigate = useNavigate();
     const [deadStockDevices, setDeadStockDevices] = useState([]);
+    const [labs, setLabs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filterType, setFilterType] = useState('All'); // 'All', 'computer', 'printer', 'laptop'
+    const [filterType, setFilterType] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedLabId, setSelectedLabId] = useState('All');
 
     useEffect(() => {
         fetchDeadStockDevices();
-    }, [filterType]);
+        fetchLabs();
+    }, []);
+
+    const fetchLabs = async () => {
+        try {
+            const response = await api.get('/labs');
+            setLabs(response.data);
+        } catch (err) {
+            console.error('Error fetching labs:', err);
+        }
+    };
 
     const fetchDeadStockDevices = async () => {
         try {
@@ -30,36 +43,40 @@ const DeadStock = () => {
 
     const getDeviceIcon = (type) => {
         switch (type) {
-          case 'desktop':
-            return <Monitor size={14} />;
-          case 'laptop':
-            return <Laptop size={14} />;
-          case 'printer':
-            return <PrinterIcon size={14} />;
-          case 'mouse':
-            return <Mouse size={14} />;
-          case 'keyboard':
-            return <Keyboard size={14} />;
-          case 'monitor':
-            return <Monitor size={14} />;
-          case 'server':
-            return <Server size={14} />;
-          case 'digital_board':
-            return <Presentation size={14} />;
-          case 'pointer':
-            return <MousePointer2 size={14} />;
-          case 'projector':
-            return <Projector size={14} />;
-          case 'cpu':
-            return <Cpu size={14} />;
-          default:
-            return null;
+            case 'desktop':
+                return <Monitor size={14} />;
+            case 'laptop':
+                return <Laptop size={14} />;
+            case 'printer':
+                return <PrinterIcon size={14} />;
+            case 'mouse':
+                return <Mouse size={14} />;
+            case 'keyboard':
+                return <Keyboard size={14} />;
+            case 'monitor':
+                return <Monitor size={14} />;
+            case 'server':
+                return <Server size={14} />;
+            case 'digital_board':
+                return <Presentation size={14} />;
+            case 'pointer':
+                return <MousePointer2 size={14} />;
+            case 'projector':
+                return <Projector size={14} />;
+            case 'cpu':
+                return <Cpu size={14} />;
+            default:
+                return null;
         }
     };
 
-    const filteredDisplayDevices = deadStockDevices.filter(device =>
-        filterType === 'All' ? true : device.device_type === filterType
-    );
+    const filteredDisplayDevices = deadStockDevices.filter(device => {
+        const matchesType = filterType === 'All' ? true : device.device_type === filterType;
+        const matchesSearch = device.device_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (device.configuration && device.configuration.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesLab = selectedLabId === 'All' ? true : device.lab_id === parseInt(selectedLabId);
+        return matchesType && matchesSearch && matchesLab;
+    });
 
     if (loading) return <div>Loading dead stock...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -77,23 +94,53 @@ const DeadStock = () => {
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
-                <div className="flex items-center gap-4">
-                    <span className="text-gray-700 font-medium">Filter by Type:</span>
-                    {['All', 'desktop', 'printer', 'laptop', 'mouse'].map((type) => (
-                        <button
-                            key={type}
-                            onClick={() => setFilterType(type)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                                filterType === type
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}>
-                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </button>
-                    ))}
-                    <span className="ml-auto text-gray-600">
-                        Total Items: <span className="font-semibold text-gray-800">{filteredDisplayDevices.length}</span>
-                    </span>
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex-1 min-w-[300px]">
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <Search size={18} />
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Search by device name or configuration..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-700"
+                                />
+                            </div>
+                        </div>
+                        <select
+                            value={selectedLabId}
+                            onChange={(e) => setSelectedLabId(e.target.value)}
+                            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium text-gray-700"
+                        >
+                            <option value="All">All Locations</option>
+                            {labs.map(lab => (
+                                <option key={lab.lab_id} value={lab.lab_id}>{lab.lab_name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-4 border-t border-gray-100 pt-4">
+                        <span className="text-gray-700 font-medium">Type:</span>
+                        <div className="flex flex-wrap gap-2">
+                            {['All', 'desktop', 'printer', 'laptop', 'mouse'].map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => setFilterType(type)}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterType === type
+                                            ? 'bg-blue-500 text-white shadow-sm'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}>
+                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                        <span className="ml-auto text-gray-600 text-sm">
+                            Showing <span className="font-semibold text-gray-800">{filteredDisplayDevices.length}</span> items
+                        </span>
+                    </div>
                 </div>
             </div>
 

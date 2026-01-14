@@ -23,10 +23,10 @@ const Labs = () => {
     try {
       const [labsResponse, hodCabinResponse] = await Promise.all([
         api.get('/labs'),
-        api.get('/hod-cabin-lab-id')
+        api.get('/central-store-lab-id')
       ]);
       const fetchedHodCabinLabId = hodCabinResponse.data.hodCabinLabId;
-      
+
       const filteredLabs = labsResponse.data.filter(lab => lab.lab_id !== fetchedHodCabinLabId);
       setLabs(filteredLabs);
     } catch (err) {

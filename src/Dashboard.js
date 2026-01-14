@@ -81,7 +81,7 @@ const Dashboard = () => {
                     items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalMice':
-                    title = 'All Mice';
+                    title = 'All Mouses';
                     apiResponse = await api.get('/devices', { params: { device_type: 'mouse' } });
                     items = apiResponse.data.filter(item => item.status === 'active');
                     break;
@@ -135,7 +135,7 @@ const Dashboard = () => {
         { label: 'Total Pointers', value: stats.totalPointers, icon: MousePointer2, color: 'red', type: 'totalPointers' },
         { label: 'Total Projectors', value: stats.totalProjectors, icon: ProjectorIcon, color: 'yellow', type: 'totalProjectors' },
         { label: 'Total CPUs', value: stats.totalCPUs, icon: Cpu, color: 'teal', type: 'totalCPUs' },
-        { label: 'Total Mice', value: stats.totalMice, icon: Mouse, color: 'orange', type: 'totalMice' },
+        { label: 'Total Mouse', value: stats.totalMice, icon: Mouse, color: 'orange', type: 'totalMice' },
         { label: 'Total Keyboards', value: stats.totalKeyboards, icon: Keyboard, color: 'indigo', type: 'totalKeyboards' }
     ];
 

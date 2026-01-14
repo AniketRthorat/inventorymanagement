@@ -1,7 +1,7 @@
 // inventory-management/src/LabDetail.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Monitor, Printer as PrinterIcon, ChevronRight, Edit2, Trash2, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Plus } from 'lucide-react';
+import { Monitor, Printer as PrinterIcon, ChevronRight, Edit2, Trash2, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Plus, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam } from 'lucide-react';
 import api from './api';
 
 const LabDetail = () => {
@@ -23,7 +23,7 @@ const LabDetail = () => {
         } finally {
             setLoading(false);
         }
-    }, [api, id, setLab, setError, setLoading]);
+    }, [id]);
 
     const fetchLabDevices = useCallback(async () => {
         try {
@@ -34,7 +34,7 @@ const LabDetail = () => {
             setError('Failed to fetch lab devices.');
             console.error('Error fetching lab devices:', err);
         }
-    }, [api, id, setDevices, setError]);
+    }, [id]);
 
     useEffect(() => {
         fetchLabDetails();
@@ -67,7 +67,13 @@ const LabDetail = () => {
     const labProjectors = devices.filter(device => device.device_type === 'projector');
     const labDigitalBoards = devices.filter(device => device.device_type === 'digital_board');
     const labPointers = devices.filter(device => device.device_type === 'pointer');
+
     const labCpus = devices.filter(device => device.device_type === 'cpu');
+    const labNetworking = devices.filter(device => ['router', 'switch', 'lan_cable'].includes(device.device_type));
+    const labStorage = devices.filter(device => ['pendrive', 'hard_disk', 'ssd'].includes(device.device_type));
+    const labAudioVideo = devices.filter(device => ['collar_mic', 'webcam'].includes(device.device_type));
+    const labAccessories = devices.filter(device => ['hdmi_cable', 'extension_board'].includes(device.device_type));
+    const labScanners = devices.filter(device => device.device_type === 'scanner');
 
     const deviceCategories = [
         { key: 'desktops', label: 'Desktops', items: labDesktops },
@@ -80,37 +86,62 @@ const LabDetail = () => {
         { key: 'digital_boards', label: 'Digital Boards', items: labDigitalBoards },
         { key: 'pointers', label: 'Pointers', items: labPointers },
         { key: 'cpus', label: 'CPUs', items: labCpus },
+        { key: 'networking', label: 'Networking', items: labNetworking },
+        { key: 'storage', label: 'Storage', items: labStorage },
+        { key: 'audio_video', label: 'Audio/Video', items: labAudioVideo },
+        { key: 'accessories', label: 'Accessories', items: labAccessories },
+        { key: 'scanners', label: 'Scanners', items: labScanners },
     ];
 
     const totalDevices = devices.length;
     const displayItems = deviceCategories.find(cat => cat.key === activeTab)?.items || [];
-    
+
     const getDeviceIcon = (type) => {
         switch (type) {
-          case 'desktop':
-            return <MonitorDot size={24} />;
-          case 'laptop':
-            return <Laptop size={24} />;
-          case 'printer':
-            return <PrinterIcon size={24} />;
-          case 'mouse':
-            return <Mouse size={24} />;
-          case 'keyboard':
-            return <Keyboard size={24} />;
-          case 'monitor':
-            return <Monitor size={24} />;
-          case 'server':
-            return <Server size={24} />;
-          case 'digital_board':
-            return <Presentation size={24} />;
-          case 'pointer':
-            return <MousePointer2 size={24} />;
-          case 'projector':
-            return <Projector size={24} />;
-          case 'cpu':
-            return <Cpu size={24} />;
-          default:
-            return null;
+            case 'desktop':
+                return <MonitorDot size={24} />;
+            case 'laptop':
+                return <Laptop size={24} />;
+            case 'printer':
+                return <PrinterIcon size={24} />;
+            case 'mouse':
+                return <Mouse size={24} />;
+            case 'keyboard':
+                return <Keyboard size={24} />;
+            case 'monitor':
+                return <Monitor size={24} />;
+            case 'server':
+                return <Server size={24} />;
+            case 'digital_board':
+                return <Presentation size={24} />;
+            case 'pointer':
+                return <MousePointer2 size={24} />;
+            case 'projector':
+                return <Projector size={24} />;
+            case 'cpu':
+                return <Cpu size={24} />;
+            case 'collar_mic':
+                return <Mic size={24} />;
+            case 'pendrive':
+                return <Usb size={24} />;
+            case 'hdmi_cable':
+            case 'lan_cable':
+                return <Cable size={24} />;
+            case 'scanner':
+                return <ScanLine size={24} />;
+            case 'extension_board':
+                return <Plug size={24} />;
+            case 'router':
+                return <Router size={24} />;
+            case 'switch':
+                return <Network size={24} />;
+            case 'hard_disk':
+            case 'ssd':
+                return <HardDrive size={24} />;
+            case 'webcam':
+                return <Webcam size={24} />;
+            default:
+                return null;
         }
     };
 
@@ -160,11 +191,10 @@ const LabDetail = () => {
                                 <button
                                     key={cat.key}
                                     onClick={() => setActiveTab(cat.key)}
-                                    className={`px-6 py-3 font-medium transition-colors border-b-2 ${
-                                        activeTab === cat.key 
-                                            ? 'border-blue-500 text-blue-600' 
-                                            : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
-                                    }`}>
+                                    className={`px-6 py-3 font-medium transition-colors border-b-2 ${activeTab === cat.key
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                                        }`}>
                                     {cat.label} ({cat.items.length})
                                 </button>
                             )
@@ -177,18 +207,16 @@ const LabDetail = () => {
                                 <div
                                     key={item.device_id}
                                     className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                                    onClick={() => navigate(`/devices/${item.device_id}`)} // Navigate to device detail page
+                                    onClick={() => navigate(`/devices/${item.device_id}`, { state: { from: `/labs/${id}`, label: lab.lab_name } })} // Navigate to device detail page with state
                                 >
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 ${
-                                        item.status === 'active' ? 'bg-green-50' : 'bg-orange-50'
-                                    }`}>
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-3 ${item.status === 'active' ? 'bg-green-50' : 'bg-orange-50'
+                                        }`}>
                                         {getDeviceIcon(item.device_type)}
                                     </div>
                                     <h4 className="font-semibold text-gray-800 mb-1">{item.device_name}</h4>
                                     <p className="text-sm text-gray-600 mb-2">{item.configuration}</p>
-                                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                        item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                    }`}>
+                                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                        }`}>
                                         {item.status}
                                     </span>
                                 </div>

@@ -40,21 +40,40 @@ const Reports = () => {
         try {
             const doc = new jsPDF();
 
+            // Add Header
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Institute Name
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(26, 26, 26);
+            doc.text("SANJAY GHODAWAT INSTITUTE", pageWidth / 2, 20, { align: "center" });
+
+            // Institute Subtext
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(75, 85, 99);
+            doc.text("Approved by A.I.C.T.E. New Delhi, and Recognized by DTE Mumbai, Govt. of Maharashtra", pageWidth / 2, 26, { align: "center" });
+
+            let yPos = 40;
+
             // Add Title
-            doc.setFontSize(20);
-            doc.text(selectedReport.title, 14, 22);
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text(selectedReport.title, 14, yPos);
+            yPos += 8;
 
             // Add generated date
             doc.setFontSize(10);
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
-
-            let yPos = 40;
+            doc.setFont("helvetica", "normal");
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPos);
+            yPos += 10;
 
             // Add Summary Section
             if (reportData.summary) {
                 doc.setFontSize(14);
-                doc.text("Summary", 14, yPos);
-                yPos += 10;
+                yPos += 5;
 
                 doc.setFontSize(12);
                 Object.entries(reportData.summary).forEach(([key, value]) => {
@@ -191,12 +210,12 @@ const Reports = () => {
                     columns: reportColumns,
                 });
 
-            } else if (report.title === 'Dead Stock Report') {
+            } else if (report.title === 'Defective Stock Report') {
                 const response = await api.get(report.endpoint);
-                const { deadStockDevices } = response.data;
+                const { defectiveStockDevices } = response.data;
 
                 const reportSummary = {
-                    'Total Dead Stock Devices': deadStockDevices.length,
+                    'Total Defective Stock Devices': defectiveStockDevices.length,
                 };
 
                 const reportColumns = [
@@ -207,7 +226,7 @@ const Reports = () => {
                     { Header: 'Status', accessor: 'status' },
                 ];
 
-                const reportTableData = deadStockDevices.map((device, index) => ({
+                const reportTableData = defectiveStockDevices.map((device, index) => ({
                     sr_no: index + 1,
                     device_name: formatString(device.device_name),
                     device_type: formatDeviceType(device.device_type),
@@ -230,7 +249,7 @@ const Reports = () => {
                     { Header: 'Device Type', accessor: 'device_type' },
                     { Header: 'Total', accessor: 'total' },
                     { Header: 'Active', accessor: 'active' },
-                    { Header: 'Dead Stock', accessor: 'dead_stock' },
+                    { Header: 'Defective Stock', accessor: 'defective_stock' },
                 ];
 
                 const reportTableData = typeStatusData.map((item, index) => ({
@@ -327,10 +346,10 @@ const Reports = () => {
             endpoint: '/reports/faculty-inventory',
         },
         {
-            title: 'Dead Stock Report',
+            title: 'Defective Stock Report',
             description: 'List of all non-functional and retired equipment',
             icon: Trash2,
-            endpoint: '/reports/dead-stock',
+            endpoint: '/reports/defective-stock',
         },
         {
             title: 'System Status Report',

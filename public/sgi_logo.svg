@@ -1,0 +1,17 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield Background -->
+  <path d="M10 20 L50 10 L90 20 L90 60 C90 80 50 95 50 95 C50 95 10 80 10 60 Z" fill="#D32F2F" stroke="#B71C1C" stroke-width="2"/>
+  <path d="M15 24 L50 15 L85 24 L85 58 C85 75 50 88 50 88 C50 88 15 75 15 58 Z" fill="none" stroke="white" stroke-width="1.5"/>
+  
+  <!-- SGI Text -->
+  <text x="50" y="55" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">SGI</text>
+  
+  <!-- Sun/Star Symbol -->
+  <circle cx="50" cy="72" r="6" fill="white" />
+  <g stroke="white" stroke-width="1.5">
+    <line x1="50" y1="63" x2="50" y2="81" />
+    <line x1="41" y1="72" x2="59" y2="72" />
+    <line x1="44" y1="66" x2="56" y2="78" />
+    <line x1="44" y1="78" x2="56" y2="66" />
+  </g>
+</svg>

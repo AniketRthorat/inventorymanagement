@@ -1,12 +1,12 @@
-// inventory-management/src/DeadStock.js
+// inventory-management/src/DefectiveStock.js
 import React, { useState, useEffect } from 'react';
 import { Trash2, Monitor, Printer as PrinterIcon, ChevronRight, Download, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api, { API_BASE_URL } from './api';
 
-const DeadStock = () => {
+const DefectiveStock = () => {
     const navigate = useNavigate();
-    const [deadStockDevices, setDeadStockDevices] = useState([]);
+    const [defectiveStockDevices, setDefectiveStockDevices] = useState([]);
     const [labs, setLabs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,7 +15,7 @@ const DeadStock = () => {
     const [selectedLabId, setSelectedLabId] = useState('All');
 
     useEffect(() => {
-        fetchDeadStockDevices();
+        fetchDefectiveStockDevices();
         fetchLabs();
     }, []);
 
@@ -28,14 +28,14 @@ const DeadStock = () => {
         }
     };
 
-    const fetchDeadStockDevices = async () => {
+    const fetchDefectiveStockDevices = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/devices', { params: { status: 'dead_stock' } });
-            setDeadStockDevices(response.data);
+            const response = await api.get('/devices', { params: { status: 'defective_stock' } });
+            setDefectiveStockDevices(response.data);
         } catch (err) {
-            setError('Failed to fetch dead stock devices.');
-            console.error('Error fetching dead stock devices:', err);
+            setError('Failed to fetch defective stock devices.');
+            console.error('Error fetching defective stock devices:', err);
         } finally {
             setLoading(false);
         }
@@ -70,7 +70,7 @@ const DeadStock = () => {
         }
     };
 
-    const filteredDisplayDevices = deadStockDevices.filter(device => {
+    const filteredDisplayDevices = defectiveStockDevices.filter(device => {
         const matchesType = filterType === 'All' ? true : device.device_type === filterType;
         const matchesSearch = device.device_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (device.configuration && device.configuration.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -78,7 +78,7 @@ const DeadStock = () => {
         return matchesType && matchesSearch && matchesLab;
     });
 
-    if (loading) return <div>Loading dead stock...</div>;
+    if (loading) return <div>Loading defective stock...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
     return (
@@ -86,11 +86,11 @@ const DeadStock = () => {
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
                 <span className="cursor-pointer hover:text-blue-600" onClick={() => navigate('/dashboard')}>Home</span>
                 <ChevronRight size={16} className="text-gray-400" />
-                <span className="text-gray-800 font-medium">Dead Stock</span>
+                <span className="text-gray-800 font-medium">Defective Stock</span>
             </div>
 
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800">Dead Stock Inventory</h2>
+                <h2 className="text-2xl font-semibold text-gray-800">Defective Stock Inventory</h2>
             </div>
 
             <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
@@ -130,8 +130,8 @@ const DeadStock = () => {
                                     key={type}
                                     onClick={() => setFilterType(type)}
                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterType === type
-                                            ? 'bg-blue-500 text-white shadow-sm'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-blue-500 text-white shadow-sm'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}>
                                     {type.charAt(0).toUpperCase() + type.slice(1)}
                                 </button>
@@ -153,7 +153,7 @@ const DeadStock = () => {
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Configuration</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Remark</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
-                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date Added to Dead Stock</th>
+                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Date Added to Defective Stock</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
                             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Download Invoice</th>
                         </tr>
@@ -206,7 +206,7 @@ const DeadStock = () => {
                             <tr>
                                 <td colSpan="8" className="py-12 text-center text-gray-600">
                                     <Trash2 size={48} className="text-gray-300 mx-auto mb-4" />
-                                    No dead stock items found.
+                                    No defective stock items found.
                                 </td>
                             </tr>
                         )}
@@ -217,4 +217,4 @@ const DeadStock = () => {
     );
 };
 
-export default DeadStock;
+export default DefectiveStock;

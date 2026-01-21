@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot } from 'lucide-react'; // Import X for close button
+import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot, Laptop } from 'lucide-react'; // Import X for close button
 import api from './api'; // Import the API client
 import InfoModal from './InfoModal';
 
@@ -9,6 +9,7 @@ const Dashboard = () => {
         totalFaculty: 0,
         totalDevices: 0,
         totalComputers: 0,
+        totalLaptops: 0,
         totalPrinters: 0,
         totalMice: 0,
         totalKeyboards: 0,
@@ -50,9 +51,14 @@ const Dashboard = () => {
                     title = 'All Computers';
                     apiResponse = await api.get('/devices', {
                         params: {
-                            device_type: ['laptop', 'desktop', 'server', 'monitor'],
+                            device_type: ['desktop', 'server', 'monitor'],
                         }
                     });
+                    items = apiResponse.data.filter(item => item.status === 'active');
+                    break;
+                case 'totalLaptops':
+                    title = 'All Laptops';
+                    apiResponse = await api.get('/devices', { params: { device_type: 'laptop' } });
                     items = apiResponse.data.filter(item => item.status === 'active');
                     break;
                 case 'totalPrinters':
@@ -105,7 +111,7 @@ const Dashboard = () => {
                     apiResponse = await api.get('/devices', {
                         params: {
                             device_type: ['laptop', 'desktop', 'server', 'monitor'],
-                            status: filter.status === 'Active' ? 'active' : 'dead_stock',
+                            status: filter.status === 'Active' ? 'active' : 'defective_stock',
                         }
                     });
                     items = apiResponse.data;
@@ -130,6 +136,7 @@ const Dashboard = () => {
 
     const summaryCards = [
         { label: 'Total Computers', value: stats.totalComputers, icon: MonitorDot, color: 'blue', type: 'totalComputers' },
+        { label: 'Total Laptops', value: stats.totalLaptops, icon: Laptop, color: 'blue', type: 'totalLaptops' },
         { label: 'Total Printers', value: stats.totalPrinters, icon: Printer, color: 'purple', type: 'totalPrinters' },
         { label: 'Total Digital Boards', value: stats.totalDigitalBoards, icon: Presentation, color: 'pink', type: 'totalDigitalBoards' },
         { label: 'Total Pointers', value: stats.totalPointers, icon: MousePointer2, color: 'red', type: 'totalPointers' },
@@ -142,7 +149,7 @@ const Dashboard = () => {
     // Build the computersByStatus array from the stats object
     const computersByStatus = stats.computersByStatus ? [
         { status: 'Active', count: stats.computersByStatus.active || 0, type: 'systems_by_status' },
-        { status: 'Dead Stock', count: stats.computersByStatus.dead_stock || 0, type: 'systems_by_status' },
+        { status: 'Defective Stock', count: stats.computersByStatus.defective_stock || 0, type: 'systems_by_status' },
     ] : [];
 
     return (

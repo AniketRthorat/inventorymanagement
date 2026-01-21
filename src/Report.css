@@ -8,6 +8,7 @@
 
 .report-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border-bottom: 2px solid #e5e7eb;
@@ -16,10 +17,33 @@
   text-align: center;
 }
 
-.report-logo {
-  width: 60px;
-  height: 60px;
-  margin-right: 20px;
+.institute-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+
+
+.institute-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.institute-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.institute-subtext {
+  font-size: 14px;
+  color: #4b5563;
+  margin-top: 4px;
 }
 
 .report-title {

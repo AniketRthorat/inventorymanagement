@@ -11,12 +11,17 @@ const Report = React.forwardRef(({ data, title }, ref) => {
   return (
     <div ref={ref} className="report-container">
       <div className="report-header">
+        <div className="institute-header">
+          <div className="institute-info">
+            <div className="institute-name">SANJAY GHODAWAT INSTITUTE</div>
+            <div className="institute-subtext">Approved by A.I.C.T.E. New Delhi, and Recognized by DTE Mumbai, Govt. of Maharashtra</div>
+          </div>
+        </div>
         <h1 className="report-title">{title}</h1>
       </div>
 
       {summary && (
         <div className="summary-section">
-          <h2 className="section-title">Summary</h2>
           <div className="summary-grid">
             {Object.entries(summary).map(([key, value]) => (
               <div key={key} className="summary-item">

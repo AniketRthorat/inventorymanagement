@@ -1,7 +1,7 @@
 // inventory-management/src/api.js
 import axios from 'axios';
 
-export const API_BASE_URL = 'https://inventory-backend.cse-tech.workers.dev/api/'; // Assuming backend runs on 8787
+export const API_BASE_URL = 'https://inventory-backend.cse-tech.workers.dev/api/'; // Remote backend URL
 
 // Function to serialize parameters for Axios
 const serializeParams = (params) => {
@@ -23,9 +23,6 @@ const serializeParams = (params) => {
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
     paramsSerializer: serializeParams // Use the custom serializer
 });
 

@@ -10,7 +10,7 @@ import LabsRoutes from './LabsRoutes'; // Import LabsRoutes
 import Faculty from './Faculty'; // Existing component, will be updated later
 import Devices from './Devices'; // Existing component, will be updated later
 import Reports from './Reports'; // Import Reports
-import DeadStock from './DeadStock'; // Import DeadStock
+import DefectiveStock from './DefectiveStock'; // Import DefectiveStock
 import CentralStore from './CentralStore'; // Import CentralStore
 
 // Add Tailwind CSS (keep this as it's a global styling setup)
@@ -43,8 +43,8 @@ function App() {
       { icon: Home, label: 'Home', path: '/dashboard' },
       { icon: Monitor, label: 'Labs', path: '/labs' },
       { icon: Users, label: 'Faculty', path: '/faculty' },
-      { icon: Package, label: 'Devices', path: '/devices' },
-      { icon: Trash2, label: 'Dead Stock', path: '/deadstock' }, // Added Dead Stock
+      { icon: Package, label: 'All Devices', path: '/devices' },
+      { icon: Trash2, label: 'Defective Stock', path: '/defective-stock' }, // Added Defective Stock
       { icon: Briefcase, label: 'Central Store', path: '/central-store' }, // Added Central Store
       { icon: FileText, label: 'Reports', path: '/reports' } // Added Reports
     ];
@@ -175,7 +175,7 @@ function App() {
           <Route path="/labs/*" element={<PrivateRoute><LabsRoutes /></PrivateRoute>} /> {/* Use LabsRoutes for nested routes */}
           <Route path="/faculty/*" element={<PrivateRoute><Faculty /></PrivateRoute>} />
           <Route path="/devices/*" element={<PrivateRoute><Devices /></PrivateRoute>} />
-          <Route path="/deadstock" element={<PrivateRoute><DeadStock /></PrivateRoute>} /> {/* Dead Stock route */}
+          <Route path="/defective-stock" element={<PrivateRoute><DefectiveStock /></PrivateRoute>} /> {/* Defective Stock route */}
           <Route path="/central-store" element={<PrivateRoute><CentralStore /></PrivateRoute>} /> {/* Central Store route */}
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} /> {/* Reports route */}
           <Route path="/*" element={<Navigate to="/dashboard" />} /> {/* Default private route */}

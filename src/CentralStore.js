@@ -138,7 +138,7 @@ const AddDeviceModal = ({ isOpen, onClose, centralStoreLabId, onDeviceAdded }) =
                     <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={newDevice.last_maintenance_date} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     <select name="status" value={newDevice.status} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                         <option value="active">Active</option>
-                        <option value="dead_stock">Dead Stock</option>
+                        <option value="defective_stock">Defective Stock</option>
                     </select>
                 </div>
                 <div className="flex justify-end mt-6">

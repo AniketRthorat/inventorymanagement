@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
 import api, { API_BASE_URL } from './api';
+import AddInvoiceModal from './AddInvoiceModal';
 
 const AddDeviceForm = () => {
     const navigate = useNavigate();
@@ -171,7 +172,7 @@ const AddDeviceForm = () => {
                 <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={newDevice.last_maintenance_date} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 <select name="status" value={newDevice.status} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     <option value="active">Active</option>
-                    <option value="dead_stock">Dead Stock</option>
+                    <option value="defective_stock">Defective Stock</option>
                 </select>
                 {!labIdFromQuery && !facultyIdFromQuery && (
                     <>
@@ -203,6 +204,8 @@ const AddDeviceForm = () => {
     );
 };
 
+
+
 // DeviceList component to display all devices
 const DeviceList = () => {
     const [devices, setDevices] = useState([]);
@@ -213,6 +216,7 @@ const DeviceList = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
     const [filterLabId, setFilterLabId] = useState('');
+    const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -230,6 +234,10 @@ const DeviceList = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleInvoiceAdded = () => {
+        fetchDevices();
     };
 
     const fetchLabsAndFaculty = async () => {
@@ -318,24 +326,24 @@ const DeviceList = () => {
     return (
         <div>
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-                <div className="relative w-full md:w-1/3">
-                    <input
-                        type="text"
-                        placeholder="Search by Type, Name, or Company..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg"
-                    />
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Monitor size={20} className="text-gray-400" />
+                <div className="flex flex-1 flex-col md:flex-row gap-3 w-full">
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            placeholder="Search by Type, Name, or Company..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm"
+                        />
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Monitor size={18} className="text-gray-400" />
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex flex-wrap gap-4 w-full md:w-auto">
                     <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+                        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm min-w-[150px]"
                     >
                         <option value="">All Types</option>
                         <option value="desktop">Desktop</option>
@@ -365,7 +373,7 @@ const DeviceList = () => {
                     <select
                         value={filterLabId}
                         onChange={(e) => setFilterLabId(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+                        className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm min-w-[150px]"
                     >
                         <option value="">All Locations</option>
                         {labs.map(lab => (
@@ -374,13 +382,22 @@ const DeviceList = () => {
                     </select>
                 </div>
 
-                <button
-                    onClick={() => navigate('/devices/add')}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                    <Plus size={18} />
-                    Add New Device
-                </button>
+                <div className="flex gap-2 flex-shrink-0">
+                    <button
+                        onClick={() => navigate('/devices/add')}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                    >
+                        <Plus size={16} />
+                        Add New Device
+                    </button>
+                    <button
+                        onClick={() => setIsInvoiceModalOpen(true)}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                    >
+                        <Plus size={16} />
+                        Add Invoice
+                    </button>
+                </div>
             </div>
             {error && <p style={{ color: 'red' }}>{error}</p>}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -428,8 +445,9 @@ const DeviceList = () => {
                                         <td className="px-3 py-4">
                                             <button
                                                 onClick={() => navigate(`/devices/${device.device_id}`)}
-                                                className="text-blue-600 hover:text-blue-800 font-medium"
+                                                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-xs flex items-center gap-1"
                                             >
+                                                <Edit2 size={12} />
                                                 View
                                             </button>
                                         </td>
@@ -440,6 +458,11 @@ const DeviceList = () => {
                     </table>
                 </div>
             </div>
+            <AddInvoiceModal
+                isOpen={isInvoiceModalOpen}
+                onClose={() => setIsInvoiceModalOpen(false)}
+                onInvoiceAdded={handleInvoiceAdded}
+            />
         </div>
     );
 };
@@ -460,15 +483,15 @@ const DeviceDetail = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
     const [isReassignLabModalOpen, setIsReassignLabModalOpen] = useState(false);
-    const [isDeadStockModalOpen, setIsDeadStockModalOpen] = useState(false);
-    const [isDeadStockPartsModalOpen, setIsDeadStockPartsModalOpen] = useState(false);
-    const [deadStockParts, setDeadStockParts] = useState({
+    const [isDefectiveStockModalOpen, setIsDefectiveStockModalOpen] = useState(false);
+    const [isDefectiveStockPartsModalOpen, setIsDefectiveStockPartsModalOpen] = useState(false);
+    const [defectiveStockParts, setDefectiveStockParts] = useState({
         mouse: false,
         keyboard: false,
         cpu: false,
         monitor: false,
     });
-    const [deadStockRemark, setDeadStockRemark] = useState('');
+    const [defectiveStockRemark, setDefectiveStockRemark] = useState('');
     const [editedDevice, setEditedDevice] = useState(null);
     const [reassignFacultyId, setReassignFacultyId] = useState('');
     const [reassignLabId, setReassignLabId] = useState('');
@@ -511,10 +534,10 @@ const DeviceDetail = () => {
     }, [isEditModalOpen, fetchLabsAndFacultyAndHodCabin]);
 
     useEffect(() => {
-        if (isReassignModalOpen) {
+        if (isDefectiveStockModalOpen) {
             fetchLabsAndFacultyAndHodCabin();
         }
-    }, [isReassignModalOpen, fetchLabsAndFacultyAndHodCabin]);
+    }, [isDefectiveStockModalOpen, fetchLabsAndFacultyAndHodCabin]);
 
     const handleEditInputChange = (e) => {
         const { name, value } = e.target;
@@ -576,55 +599,55 @@ const DeviceDetail = () => {
         }
     };
 
-    const handleMarkAsDeadStock = async () => {
-        if (!deadStockRemark) {
-            setError('Remark is required to mark a device as dead stock.');
+    const handleMarkAsDefectiveStock = async () => {
+        if (!defectiveStockRemark) {
+            setError('Remark is required to mark a device as defective stock.');
             return;
         }
         try {
-            await api.put(`/devices/${id}/deadstock`, { remark: deadStockRemark });
-            setIsDeadStockModalOpen(false);
-            setDeadStockRemark('');
+            await api.put(`/devices/${id}/deadstock`, { remark: defectiveStockRemark });
+            setIsDefectiveStockModalOpen(false);
+            setDefectiveStockRemark('');
             fetchDeviceDetails(); // Refresh details
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to mark device as dead stock.');
-            console.error('Error marking device as dead stock:', err);
+            setError(err.response?.data?.message || 'Failed to mark device as defective stock.');
+            console.error('Error marking device as defective stock:', err);
         }
     };
 
-    const handleOpenDeadStockModal = useCallback(() => {
+    const handleOpenDefectiveStockModal = useCallback(() => {
         if (device.device_type === 'desktop') {
-            setIsDeadStockPartsModalOpen(true);
+            setIsDefectiveStockPartsModalOpen(true);
         } else {
-            setIsDeadStockModalOpen(true);
+            setIsDefectiveStockModalOpen(true);
         }
-    }, [device, setIsDeadStockPartsModalOpen, setIsDeadStockModalOpen]);
+    }, [device, setIsDefectiveStockPartsModalOpen, setIsDefectiveStockModalOpen]);
 
-    const handleDeadStockPartsChange = (e) => {
+    const handleDefectiveStockPartsChange = (e) => {
         const { name, checked } = e.target;
-        setDeadStockParts(prev => ({ ...prev, [name]: checked }));
+        setDefectiveStockParts(prev => ({ ...prev, [name]: checked }));
     };
 
-    const handleMarkPartsAsDeadStock = async () => {
-        const parts = Object.keys(deadStockParts).filter(part => deadStockParts[part]);
+    const handleMarkPartsAsDefectiveStock = async () => {
+        const parts = Object.keys(defectiveStockParts).filter(part => defectiveStockParts[part]);
         if (parts.length === 0) {
-            setError('Please select at least one part to mark as dead stock.');
+            setError('Please select at least one part to mark as defective stock.');
             return;
         }
-        if (!deadStockRemark) {
+        if (!defectiveStockRemark) {
             setError('Remark is required.');
             return;
         }
 
         try {
-            await api.put(`/devices/${id}/deadstock-parts`, { parts, remark: deadStockRemark });
-            setIsDeadStockPartsModalOpen(false);
-            setDeadStockRemark('');
-            setDeadStockParts({ mouse: false, keyboard: false, cpu: false, monitor: false });
+            await api.put(`/devices/${id}/deadstock-parts`, { parts, remark: defectiveStockRemark });
+            setIsDefectiveStockPartsModalOpen(false);
+            setDefectiveStockRemark('');
+            setDefectiveStockParts({ mouse: false, keyboard: false, cpu: false, monitor: false });
             fetchDeviceDetails(); // Refresh details
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to mark parts as dead stock.');
-            console.error('Error marking parts as dead stock:', err);
+            setError(err.response?.data?.message || 'Failed to mark parts as defective stock.');
+            console.error('Error marking parts as defective stock:', err);
         }
     };
 
@@ -751,9 +774,9 @@ const DeviceDetail = () => {
                         <Users size={18} />
                         Reassign to Lab
                     </button>
-                    <button onClick={handleOpenDeadStockModal} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    <button onClick={handleOpenDefectiveStockModal} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
                         <Trash2 size={18} />
-                        Mark as Dead Stock
+                        Mark as Defective Stock
                     </button>
                     <button onClick={handleDeleteDevice} className="w-full flex items-center justify-center gap-2 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
                         <Trash2 size={18} />
@@ -817,7 +840,7 @@ const DeviceDetail = () => {
                             <input type="date" name="last_maintenance_date" placeholder="Last Maintenance Date" value={editedDevice.last_maintenance_date ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                             <select name="status" value={editedDevice.status ?? ''} onChange={handleEditInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="active">Active</option>
-                                <option value="dead_stock">Dead Stock</option>
+                                <option value="defective_stock">Defective Stock</option>
                             </select>
                         </div>
                         <div className="flex justify-end mt-6">
@@ -883,28 +906,28 @@ const DeviceDetail = () => {
                 </div>
             )}
 
-            {/* Mark as Dead Stock Modal */}
-            {isDeadStockModalOpen && (
+            {/* Mark as Defective Stock Modal */}
+            {isDefectiveStockModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-30 z-20 flex justify-center items-center">
                     <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold text-gray-800">Mark as Dead Stock</h3>
-                            <button onClick={() => setIsDeadStockModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <h3 className="text-xl font-semibold text-gray-800">Mark as Defective Stock</h3>
+                            <button onClick={() => setIsDefectiveStockModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X size={20} className="text-gray-600" />
                             </button>
                         </div>
                         <div className="space-y-4">
                             <textarea
-                                name="deadStockRemark"
-                                placeholder="Enter remark for marking as dead stock..."
-                                value={deadStockRemark}
-                                onChange={(e) => setDeadStockRemark(e.target.value)}
+                                name="defectiveStockRemark"
+                                placeholder="Enter remark for marking as defective stock..."
+                                value={defectiveStockRemark}
+                                onChange={(e) => setDefectiveStockRemark(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                 rows="4"
                             ></textarea>
                         </div>
                         <div className="flex justify-end mt-6">
-                            <button onClick={handleMarkAsDeadStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                            <button onClick={handleMarkAsDefectiveStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                                 Confirm
                             </button>
                         </div>
@@ -912,26 +935,26 @@ const DeviceDetail = () => {
                 </div>
             )}
 
-            {/* Mark Parts as Dead Stock Modal (for Desktops) */}
-            {isDeadStockPartsModalOpen && (
+            {/* Mark Parts as Defective Stock Modal (for Desktops) */}
+            {isDefectiveStockPartsModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity_30 z-20 flex justify-center items-center">
                     <div className="bg-white rounded-lg shadow-2xl p-8 w-11/12 md:w-1/2 lg:w-1/3">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-semibold text-gray-800">Mark Desktop Parts as Dead Stock</h3>
-                            <button onClick={() => setIsDeadStockPartsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <h3 className="text-xl font-semibold text-gray-800">Mark Desktop Parts as Defective Stock</h3>
+                            <button onClick={() => setIsDefectiveStockPartsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X size={20} className="text-gray-600" />
                             </button>
                         </div>
                         <div className="space-y-4">
-                            <p>Select the defective parts from this desktop set to move to dead stock.</p>
+                            <p>Select the defective parts from this desktop set to move to defective stock.</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {Object.keys(deadStockParts).map(part => (
+                                {Object.keys(defectiveStockParts).map(part => (
                                     <label key={part} className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
                                             name={part}
-                                            checked={deadStockParts[part]}
-                                            onChange={handleDeadStockPartsChange}
+                                            checked={defectiveStockParts[part]}
+                                            onChange={handleDefectiveStockPartsChange}
                                             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                         />
                                         <span className="capitalize">{part}</span>
@@ -939,16 +962,16 @@ const DeviceDetail = () => {
                                 ))}
                             </div>
                             <textarea
-                                name="deadStockRemark"
+                                name="defectiveStockRemark"
                                 placeholder="Enter remark for these parts..."
-                                value={deadStockRemark}
-                                onChange={(e) => setDeadStockRemark(e.target.value)}
+                                value={defectiveStockRemark}
+                                onChange={(e) => setDefectiveStockRemark(e.target.value)}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                                 rows="4"
                             ></textarea>
                         </div>
                         <div className="flex justify-end mt-6">
-                            <button onClick={handleMarkPartsAsDeadStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                            <button onClick={handleMarkPartsAsDefectiveStock} className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                                 Confirm
                             </button>
                         </div>

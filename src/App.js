@@ -12,6 +12,8 @@ import Devices from './Devices'; // Existing component, will be updated later
 import Reports from './Reports'; // Import Reports
 import DefectiveStock from './DefectiveStock'; // Import DefectiveStock
 import CentralStore from './CentralStore'; // Import CentralStore
+import Invoices from './Invoices'; // Import Invoices
+import PublicDeviceDetail from './PublicDeviceDetail'; // Import the new public device detail page
 
 // Add Tailwind CSS (keep this as it's a global styling setup)
 const style = document.createElement('link');
@@ -46,6 +48,7 @@ function App() {
       { icon: Package, label: 'All Devices', path: '/devices' },
       { icon: Trash2, label: 'Defective Stock', path: '/defective-stock' }, // Added Defective Stock
       { icon: Briefcase, label: 'Central Store', path: '/central-store' }, // Added Central Store
+      { icon: FileText, label: 'Invoices', path: '/invoices' }, // Added Invoices
       { icon: FileText, label: 'Reports', path: '/reports' } // Added Reports
     ];
 
@@ -154,11 +157,12 @@ function App() {
     );
   };
 
-  // If not authenticated, only render the login page
+  // If not authenticated, only render the login page or public device view
   if (!isAuthenticated) {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/device/:code" element={<PublicDeviceDetail />} />
         {/* Any other path when not authenticated should redirect to login */}
         <Route path="/*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -175,8 +179,10 @@ function App() {
           <Route path="/labs/*" element={<PrivateRoute><LabsRoutes /></PrivateRoute>} /> {/* Use LabsRoutes for nested routes */}
           <Route path="/faculty/*" element={<PrivateRoute><Faculty /></PrivateRoute>} />
           <Route path="/devices/*" element={<PrivateRoute><Devices /></PrivateRoute>} />
+          <Route path="/device/:code" element={<PublicDeviceDetail />} /> {/* Add public route here too for logged-in users */}
           <Route path="/defective-stock" element={<PrivateRoute><DefectiveStock /></PrivateRoute>} /> {/* Defective Stock route */}
           <Route path="/central-store" element={<PrivateRoute><CentralStore /></PrivateRoute>} /> {/* Central Store route */}
+          <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} /> {/* Invoices route */}
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} /> {/* Reports route */}
           <Route path="/*" element={<Navigate to="/dashboard" />} /> {/* Default private route */}
         </Routes>

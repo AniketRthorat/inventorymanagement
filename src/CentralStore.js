@@ -48,8 +48,8 @@ const AddDeviceModal = ({ isOpen, onClose, centralStoreLabId, onDeviceAdded }) =
                 window.alert(errorMessage);
                 return;
             }
-            if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
-                setError('Invoice PDF size cannot exceed 1MB.');
+            if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 500 * 1024) { // 500KB limit
+                alert('Invoice PDF size cannot exceed 500KB.');
                 return;
             }
 
@@ -120,7 +120,7 @@ const AddDeviceModal = ({ isOpen, onClose, centralStoreLabId, onDeviceAdded }) =
                     <input type="text" name="labels" placeholder="Labels (comma-separated)" value={newDevice.labels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     <input type="text" name="invoice_number" placeholder="Invoice Number" value={newDevice.invoice_number} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     <div className="flex flex-col">
-                        <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 1MB)</label>
+                        <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 500KB)</label>
                         <input type="file" id="invoice_pdf" name="invoice_pdf" onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     </div>
                     {(newDevice.device_type === 'desktop' || newDevice.device_type === 'laptop') && (

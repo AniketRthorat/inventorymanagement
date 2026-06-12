@@ -39,8 +39,8 @@ const AddInvoiceModal = ({ isOpen, onClose, onInvoiceAdded }) => {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file && file.size > 1024 * 1024) {
-            setError('Invoice PDF size cannot exceed 1MB.');
+        if (file && file.size > 500 * 1024) {
+            alert('Invoice PDF size cannot exceed 500KB.');
             setInvoicePdf(null);
         } else {
             setError(null);
@@ -75,8 +75,8 @@ const AddInvoiceModal = ({ isOpen, onClose, onInvoiceAdded }) => {
         }
 
         // Client-side validation for PDF size (1MB limit)
-        if (invoicePdf.size > 1024 * 1024) {
-            setError('Invoice PDF size cannot exceed 1MB.');
+        if (invoicePdf.size > 500 * 1024) {
+            alert('Invoice PDF size cannot exceed 500KB.');
             return;
         }
 
@@ -87,6 +87,7 @@ const AddInvoiceModal = ({ isOpen, onClose, onInvoiceAdded }) => {
 
         try {
             await api.post('invoices', formData);
+            alert('Invoice processed successfully!');
             onInvoiceAdded();
             onClose();
         } catch (err) {
@@ -130,7 +131,7 @@ const AddInvoiceModal = ({ isOpen, onClose, onInvoiceAdded }) => {
                     <div>
                         <label htmlFor="invoice-pdf-upload" className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                             <Upload size={18} />
-                            <span>{invoicePdf ? invoicePdf.name : 'Upload Invoice PDF (Max 1MB)'}</span>
+                            <span>{invoicePdf ? invoicePdf.name : 'Upload Invoice PDF (Max 500KB)'}</span>
                         </label>
                         <input
                             id="invoice-pdf-upload"

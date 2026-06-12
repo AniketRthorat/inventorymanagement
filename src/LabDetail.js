@@ -1,8 +1,12 @@
 // inventory-management/src/LabDetail.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Monitor, Printer as PrinterIcon, ChevronRight, Edit2, Trash2, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Plus, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam } from 'lucide-react';
+import { Monitor, Printer as PrinterIcon, ChevronRight, Edit2, Trash2, Laptop, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Plus, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam, QrCode, FileDown } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
+import QRCode from 'qrcode';
+import jsPDF from 'jspdf';
 import api from './api';
+import { encodeDeviceId } from './utils/qrUtils';
 
 const LabDetail = () => {
     const { id } = useParams();
@@ -12,6 +16,7 @@ const LabDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('desktops'); // Default to desktops
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     const fetchLabDetails = useCallback(async () => {
         try {
@@ -50,6 +55,76 @@ const LabDetail = () => {
                 setError(err.response?.data?.message || 'Failed to delete lab.');
                 console.error('Error deleting lab:', err);
             }
+        }
+    };
+
+    const generateBulkQR = async () => {
+        if (devices.length === 0) return;
+        setIsGeneratingPDF(true);
+        
+        try {
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const labelWidth = 85;
+            const labelHeight = 50;
+            const marginX = 12;
+            const marginY = 15;
+            const spacingX = 6;
+            const spacingY = 5;
+            const labelsPerRow = 2;
+            const labelsPerCol = 5;
+            const labelsPerPage = labelsPerRow * labelsPerCol;
+
+            const sortedDevices = [...devices].sort((a, b) => a.device_id - b.device_id);
+
+            for (let i = 0; i < sortedDevices.length; i++) {
+                if (i > 0 && i % labelsPerPage === 0) {
+                    doc.addPage();
+                }
+
+                const device = sortedDevices[i];
+                const pageIndex = i % labelsPerPage;
+                const col = pageIndex % labelsPerRow;
+                const row = Math.floor(pageIndex / labelsPerRow);
+
+                const x = marginX + col * (labelWidth + spacingX);
+                const y = marginY + row * (labelHeight + spacingY);
+
+                doc.setDrawColor(220);
+                doc.rect(x, y, labelWidth, labelHeight);
+
+                doc.setFontSize(7);
+                doc.setTextColor(150);
+                doc.setFont('helvetica', 'bold');
+                doc.text(lab.lab_name.toUpperCase(), x + labelWidth / 2, y + 6, { align: 'center' });
+
+                const tag = encodeDeviceId(device.device_id);
+                doc.setFontSize(14);
+                doc.setTextColor(37, 99, 235);
+                doc.text(tag, x + labelWidth / 2, y + 13, { align: 'center' });
+// QR Code
+const qrValue = `https://cseinventory.cse-tech.workers.dev/device/${tag}`;
+const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
+                doc.addImage(qrDataUrl, 'PNG', x + (labelWidth - 25) / 2, y + 16, 25, 25);
+
+                doc.setFontSize(8);
+                doc.setTextColor(50);
+                doc.text(device.device_name, x + labelWidth / 2, y + 45, { align: 'center' });
+
+                doc.setFontSize(6);
+                doc.setTextColor(180);
+                doc.text("SCAN FOR DEVICE DETAILS", x + labelWidth / 2, y + 48, { align: 'center' });
+            }
+
+            doc.save(`${lab.lab_name}_QR_Labels.pdf`);
+        } catch (err) {
+            console.error('Error generating bulk QR:', err);
+        } finally {
+            setIsGeneratingPDF(false);
         }
     };
 
@@ -161,6 +236,17 @@ const LabDetail = () => {
                     <p className="text-gray-600">{lab.location} (Capacity: {lab.capacity})</p>
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={generateBulkQR}
+                        disabled={isGeneratingPDF || devices.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50">
+                        {isGeneratingPDF ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                            <QrCode size={18} />
+                        )}
+                        Generate Bulk QR
+                    </button>
                     <button
                         onClick={() => navigate(`/devices/add?labId=${id}`)}
                         className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">

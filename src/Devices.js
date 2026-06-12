@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam } from 'lucide-react';
+import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam, QrCode, Download } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
+import html2canvas from 'html2canvas';
 import api, { API_BASE_URL } from './api';
 import AddInvoiceModal from './AddInvoiceModal';
+import { encodeDeviceId } from './utils/qrUtils';
 
 const AddDeviceForm = () => {
     const navigate = useNavigate();
@@ -75,8 +78,8 @@ const AddDeviceForm = () => {
                 return;
             }
             // Client-side validation for PDF size
-            if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 1024 * 1024) { // 1MB limit
-                setError('Invoice PDF size cannot exceed 1MB.');
+            if (newDevice.invoice_pdf && newDevice.invoice_pdf.size > 500 * 1024) { // 500KB limit
+                alert('Invoice PDF size cannot exceed 500KB.');
                 return;
             }
 
@@ -154,7 +157,7 @@ const AddDeviceForm = () => {
                 <input type="text" name="labels" placeholder="Labels (comma-separated)" value={newDevice.labels} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 <input type="text" name="invoice_number" placeholder="Invoice Number" value={newDevice.invoice_number} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 <div className="flex flex-col">
-                    <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 1MB)</label>
+                    <label htmlFor="invoice_pdf" className="text-sm font-medium text-gray-700 mb-1">Upload Invoice Bill (Max 500KB)</label>
                     <input type="file" id="invoice_pdf" name="invoice_pdf" onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 {(newDevice.device_type === 'desktop' || newDevice.device_type === 'laptop') && (
@@ -306,13 +309,15 @@ const DeviceList = () => {
         const query = searchQuery.toLowerCase();
         const lab = labs.find(l => l.lab_id === device.lab_id);
         const facultyMember = faculty.find(f => f.faculty_id === device.faculty_id);
+        const assetTag = encodeDeviceId(device.device_id).toLowerCase();
 
         const matchesSearch = (
             device.device_name.toLowerCase().includes(query) ||
             device.device_type.toLowerCase().includes(query) ||
             (device.company && device.company.toLowerCase().includes(query)) ||
             (lab && lab.lab_name.toLowerCase().includes(query)) ||
-            (facultyMember && facultyMember.faculty_name.toLowerCase().includes(query))
+            (facultyMember && facultyMember.faculty_name.toLowerCase().includes(query)) ||
+            assetTag.includes(query)
         );
 
         const matchesType = filterType === '' || device.device_type === filterType;
@@ -330,7 +335,7 @@ const DeviceList = () => {
                     <div className="relative flex-1">
                         <input
                             type="text"
-                            placeholder="Search by Type, Name, or Company..."
+                            placeholder="Search by Name, Tag (e.g. SGI-), or Lab..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm"
@@ -495,6 +500,7 @@ const DeviceDetail = () => {
     const [editedDevice, setEditedDevice] = useState(null);
     const [reassignFacultyId, setReassignFacultyId] = useState('');
     const [reassignLabId, setReassignLabId] = useState('');
+    const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
     const fetchDeviceDetails = useCallback(async () => {
         try {
@@ -651,6 +657,29 @@ const DeviceDetail = () => {
         }
     };
 
+    const downloadQRCode = async () => {
+        const element = document.getElementById("qr-label-container");
+        if (element) {
+            try {
+                const canvas = await html2canvas(element, {
+                    scale: 3, // High quality
+                    backgroundColor: "#ffffff",
+                    useCORS: true
+                });
+                
+                const pngUrl = canvas.toDataURL("image/png");
+                const downloadLink = document.createElement("a");
+                downloadLink.href = pngUrl;
+                downloadLink.download = `Label_${encodeDeviceId(device.device_id)}.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            } catch (err) {
+                console.error("Error generating label image:", err);
+            }
+        }
+    };
+
 
     if (loading) return <div>Loading device details...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -761,29 +790,77 @@ const DeviceDetail = () => {
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <button onClick={() => setIsEditModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button onClick={() => setIsEditModalOpen(true)} className="flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                         <Edit2 size={18} />
                         Edit Device Details
                     </button>
-                    <button onClick={() => setIsReassignModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium">
-                        <Users size={18} />
-                        Reassign Device to Faculty
+                    <button onClick={() => setIsQRModalOpen(true)} className="flex items-center justify-center gap-2 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors font-medium">
+                        <QrCode size={18} />
+                        Generate QR Code
                     </button>
-                    <button onClick={() => setIsReassignLabModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors font-medium">
+                    <button onClick={() => setIsReassignModalOpen(true)} className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm">
+                        <Users size={18} />
+                        Reassign to Faculty
+                    </button>
+                    <button onClick={() => setIsReassignLabModalOpen(true)} className="flex items-center justify-center gap-2 py-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors font-medium text-sm">
                         <Users size={18} />
                         Reassign to Lab
                     </button>
-                    <button onClick={handleOpenDefectiveStockModal} className="w-full flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium">
+                    <button onClick={handleOpenDefectiveStockModal} className="flex items-center justify-center gap-2 py-3 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium text-sm">
                         <Trash2 size={18} />
-                        Mark as Defective Stock
+                        Mark as Defective
                     </button>
-                    <button onClick={handleDeleteDevice} className="w-full flex items-center justify-center gap-2 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+                    <button onClick={handleDeleteDevice} className="flex items-center justify-center gap-2 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm">
                         <Trash2 size={18} />
                         Delete Device
                     </button>
                 </div>
             </div>
+
+            {/* QR Code Modal */}
+            {isQRModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-800">Device QR Label</h3>
+                            <button onClick={() => setIsQRModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-8 flex flex-col items-center">
+                            <div id="qr-label-container" className="bg-white border-2 border-gray-200 p-6 rounded-xl flex flex-col items-center text-center shadow-sm">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{assignedLab ? assignedLab.lab_name : 'SGI INVENTORY'}</p>
+                                <p className="text-lg font-black text-blue-600 mb-4">{encodeDeviceId(device.device_id)}</p>
+                                
+                                <div className="bg-white p-2 border border-gray-100 rounded-lg mb-4">
+                                    <QRCodeCanvas
+                                        id="qr-canvas"
+                                        value={`${window.location.origin}/device/${encodeDeviceId(device.device_id)}`}
+                                        size={180}
+                                        level={"H"}
+                                        includeMargin={true}
+                                    />
+                                </div>
+                                
+                                <p className="text-sm font-semibold text-gray-800 mb-1">{device.device_name}</p>
+                                <p className="text-[10px] text-gray-400 font-medium">SCAN FOR DEVICE DETAILS</p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-gray-50 flex gap-3">
+                            <button 
+                                onClick={downloadQRCode}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                            >
+                                <Download size={18} />
+                                Download PNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Device Modal */}
             {isEditModalOpen && editedDevice && (

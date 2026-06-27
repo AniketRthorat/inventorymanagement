@@ -107,7 +107,7 @@ const LabDetail = () => {
                 doc.setTextColor(37, 99, 235);
                 doc.text(tag, x + labelWidth / 2, y + 13, { align: 'center' });
 // QR Code
-const qrValue = `https://cseinventory.cse-tech.workers.dev/device/${tag}`;
+const qrValue = `${window.location.origin}/?device=${tag}`;
 const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
                 doc.addImage(qrDataUrl, 'PNG', x + (labelWidth - 25) / 2, y + 16, 25, 25);
 
@@ -233,7 +233,24 @@ const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h2 className="text-2xl font-semibold text-gray-800">{lab.lab_name}</h2>
-                    <p className="text-gray-600">{lab.location} (Capacity: {lab.capacity})</p>
+                    <div className="flex flex-col gap-1 mt-1 text-gray-600 text-sm">
+                        <div className="flex items-center gap-2">
+                            <span>{lab.location}</span>
+                            <span className="text-gray-300">•</span>
+                            <span>Capacity: {lab.capacity}</span>
+                        </div>
+                        {lab.assistant_name ? (
+                            <div className="text-xs font-semibold text-indigo-600 flex items-center gap-1 mt-1 bg-indigo-50 px-2 py-1 rounded-lg w-max">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                                Lab Assistant: {lab.assistant_name}
+                            </div>
+                        ) : (
+                            <div className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1 bg-gray-100 px-2 py-1 rounded-lg w-max">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                Assistant: None Assigned
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     <button

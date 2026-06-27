@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam, QrCode, Download } from 'lucide-react';
+import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, Trash2, Users, Server, Keyboard, Mouse, Projector, Cpu, Presentation, MousePointer2, MonitorDot, Mic, Usb, Cable, ScanLine, Plug, Router, Network, HardDrive, Webcam, QrCode, Download, Wrench } from 'lucide-react';
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
@@ -501,6 +501,8 @@ const DeviceDetail = () => {
     const [reassignFacultyId, setReassignFacultyId] = useState('');
     const [reassignLabId, setReassignLabId] = useState('');
     const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+    const [maintenanceLogs, setMaintenanceLogs] = useState([]);
+    const [maintenanceLogsLoading, setMaintenanceLogsLoading] = useState(true);
 
     const fetchDeviceDetails = useCallback(async () => {
         try {
@@ -512,6 +514,18 @@ const DeviceDetail = () => {
             console.error('Error fetching device details:', err);
         } finally {
             setLoading(false);
+        }
+    }, [id]);
+
+    const fetchMaintenanceLogs = useCallback(async () => {
+        try {
+            setMaintenanceLogsLoading(true);
+            const response = await api.get(`/devices/${id}/maintenance`);
+            setMaintenanceLogs(response.data);
+        } catch (err) {
+            console.error('Error fetching maintenance logs:', err);
+        } finally {
+            setMaintenanceLogsLoading(false);
         }
     }, [id]);
 
@@ -531,7 +545,8 @@ const DeviceDetail = () => {
     useEffect(() => {
         fetchDeviceDetails();
         fetchLabsAndFacultyAndHodCabin();
-    }, [fetchDeviceDetails, fetchLabsAndFacultyAndHodCabin]);
+        fetchMaintenanceLogs();
+    }, [fetchDeviceDetails, fetchLabsAndFacultyAndHodCabin, fetchMaintenanceLogs]);
 
     useEffect(() => {
         if (isEditModalOpen) {
@@ -577,6 +592,18 @@ const DeviceDetail = () => {
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete device.');
                 console.error('Error deleting device:', err);
+            }
+        }
+    };
+
+    const handleDeleteMaintenanceLog = async (logId) => {
+        if (window.confirm('Are you sure you want to delete this maintenance log? This action cannot be undone.')) {
+            try {
+                await api.delete(`/devices/${id}/maintenance/${logId}`);
+                fetchMaintenanceLogs(); // Refresh the list
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to delete maintenance log.');
+                console.error('Error deleting maintenance log:', err);
             }
         }
     };
@@ -818,7 +845,67 @@ const DeviceDetail = () => {
                 </div>
             </div>
 
-            {/* QR Code Modal */}
+            {/* Maintenance History Card */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Wrench size={16} className="text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">Maintenance History</h3>
+                    {maintenanceLogs.length > 0 && (
+                        <span className="ml-auto px-2.5 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                            {maintenanceLogs.length} records
+                        </span>
+                    )}
+                </div>
+
+                {maintenanceLogsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                    </div>
+                ) : maintenanceLogs.length === 0 ? (
+                    <div className="text-center py-8">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Wrench size={22} className="text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">No maintenance records yet.</p>
+                        <p className="text-gray-400 text-xs mt-1">Records appear here when a lab assistant logs maintenance via QR code.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {maintenanceLogs.map((log, idx) => (
+                            <div key={log.log_id || idx} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="flex-shrink-0">
+                                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <span className="text-green-700 font-bold text-sm">
+                                            {log.assistant_name?.charAt(0)?.toUpperCase() || 'L'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                        <span className="font-semibold text-gray-800 text-sm">{log.assistant_name}</span>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                                                {log.maintenance_date ? new Date(log.maintenance_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                                            </span>
+                                            <button
+                                                onClick={() => handleDeleteMaintenanceLog(log.log_id)}
+                                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"
+                                                title="Delete Record"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 leading-relaxed">{log.changes_made}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {isQRModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
@@ -837,7 +924,7 @@ const DeviceDetail = () => {
                                 <div className="bg-white p-2 border border-gray-100 rounded-lg mb-4">
                                     <QRCodeCanvas
                                         id="qr-canvas"
-                                        value={`${window.location.origin}/device/${encodeDeviceId(device.device_id)}`}
+                                        value={`${window.location.origin}/?device=${encodeDeviceId(device.device_id)}`}
                                         size={180}
                                         level={"H"}
                                         includeMargin={true}

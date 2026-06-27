@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot, Laptop } from 'lucide-react'; // Import X for close button
+import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot, Laptop } from 'lucide-react'; // Import icons
 import api from './api'; // Import the API client
 import InfoModal from './InfoModal';
 
@@ -19,7 +19,6 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalContent, setModalContent] = useState({ title: '', items: [] });
-
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -207,9 +206,9 @@ const Dashboard = () => {
                             </div>
                         ))}
                     </div>
-                </div>
             </div>
-            {modalVisible && (
+        </div>
+        {modalVisible && (
                 <InfoModal
                     title={modalContent.title}
                     items={modalContent.items}

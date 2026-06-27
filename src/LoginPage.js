@@ -16,8 +16,11 @@ const LoginPage = () => { // Corrected component definition
         setError('');
         
         if (username === "labadmin" && password === "cse@1644") {
-            login('static_token'); // Use a dummy token for static authentication
+            login('static_token', 'admin'); // Admin role
             navigate('/dashboard');
+        } else if (username === "labassistant" && password === "cse@1644") {
+            login('static_token', 'assistant'); // Assistant role
+            navigate('/assistant-dashboard');
         } else {
             setError('Invalid username or password.');
         }

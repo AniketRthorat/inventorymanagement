@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
-import { Home, Monitor, Users, Trash2, Briefcase, FileText, User, Package, LogOut } from 'lucide-react';
+import { Home, Monitor, Users, Trash2, Briefcase, FileText, User, Package, LogOut, AlertCircle } from 'lucide-react';
 
 import { useAuth } from './AuthContext';
 import PrivateRoute from './PrivateRoute';
@@ -14,6 +14,8 @@ import DefectiveStock from './DefectiveStock'; // Import DefectiveStock
 import CentralStore from './CentralStore'; // Import CentralStore
 import Invoices from './Invoices'; // Import Invoices
 import PublicDeviceDetail from './PublicDeviceDetail'; // Import the new public device detail page
+import LabAssistantDashboard from './LabAssistantDashboard'; // Import Lab Assistant Dashboard
+import IssuesPage from './IssuesPage'; // Import Issues Page
 
 // Add Tailwind CSS (keep this as it's a global styling setup)
 const style = document.createElement('link');
@@ -24,33 +26,43 @@ if (!document.querySelector('link[href*="tailwind"]')) {
 }
 
 function App() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, userRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Handle Google OAuth callback token
+  // Handle Google OAuth callback token and QR Redirect
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
+    const deviceCode = params.get('device');
+
     if (token) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('jwtToken', token);
       }
       navigate('/dashboard'); // Redirect to dashboard after setting token
+    } else if (deviceCode) {
+      navigate(`/device/${deviceCode}`); // Handle redirect from backend
     }
   }, [location, navigate]);
 
   const Sidebar = () => {
-    const menuItems = [
-      { icon: Home, label: 'Home', path: '/dashboard' },
-      { icon: Monitor, label: 'Labs', path: '/labs' },
-      { icon: Users, label: 'Faculty', path: '/faculty' },
-      { icon: Package, label: 'All Devices', path: '/devices' },
-      { icon: Trash2, label: 'Defective Stock', path: '/defective-stock' }, // Added Defective Stock
-      { icon: Briefcase, label: 'Central Store', path: '/central-store' }, // Added Central Store
-      { icon: FileText, label: 'Invoices', path: '/invoices' }, // Added Invoices
-      { icon: FileText, label: 'Reports', path: '/reports' } // Added Reports
-    ];
+    const menuItems = userRole === 'assistant'
+      ? [
+          { icon: FileText, label: 'Reported Issues', path: '/assistant-dashboard' },
+          { icon: AlertCircle, label: 'Issues', path: '/issues' }
+        ]
+      : [
+          { icon: Home, label: 'Home', path: '/dashboard' },
+          { icon: Monitor, label: 'Labs', path: '/labs' },
+          { icon: Users, label: 'Faculty', path: '/faculty' },
+          { icon: Package, label: 'All Devices', path: '/devices' },
+          { icon: Trash2, label: 'Defective Stock', path: '/defective-stock' },
+          { icon: Briefcase, label: 'Central Store', path: '/central-store' },
+          { icon: FileText, label: 'Invoices', path: '/invoices' },
+          { icon: FileText, label: 'Reports', path: '/reports' },
+          { icon: AlertCircle, label: 'Issues', path: '/issues' }
+        ];
 
     return (
       <div className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col">
@@ -119,7 +131,7 @@ function App() {
       hour12: true,
     });
 
-    const userName = "Admin User"; // Static user name
+    const userName = userRole === 'assistant' ? "Lab Assistant" : "Admin User"; // Dynamic user name
 
     return (
       <div className="h-16 bg-white border-b border-gray-200 fixed top-0 left-64 right-0 flex items-center justify-between px-6 z-10">
@@ -175,16 +187,28 @@ function App() {
       <TopBar logout={logout} />
       <div className="ml-64 mt-16 p-8">
         <Routes>
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/labs/*" element={<PrivateRoute><LabsRoutes /></PrivateRoute>} /> {/* Use LabsRoutes for nested routes */}
-          <Route path="/faculty/*" element={<PrivateRoute><Faculty /></PrivateRoute>} />
-          <Route path="/devices/*" element={<PrivateRoute><Devices /></PrivateRoute>} />
-          <Route path="/device/:code" element={<PublicDeviceDetail />} /> {/* Add public route here too for logged-in users */}
-          <Route path="/defective-stock" element={<PrivateRoute><DefectiveStock /></PrivateRoute>} /> {/* Defective Stock route */}
-          <Route path="/central-store" element={<PrivateRoute><CentralStore /></PrivateRoute>} /> {/* Central Store route */}
-          <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} /> {/* Invoices route */}
-          <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} /> {/* Reports route */}
-          <Route path="/*" element={<Navigate to="/dashboard" />} /> {/* Default private route */}
+          {userRole === 'assistant' ? (
+            <>
+              <Route path="/assistant-dashboard" element={<PrivateRoute><LabAssistantDashboard /></PrivateRoute>} />
+              <Route path="/issues" element={<PrivateRoute><IssuesPage /></PrivateRoute>} />
+              <Route path="/device/:code" element={<PublicDeviceDetail />} />
+              <Route path="/*" element={<Navigate to="/assistant-dashboard" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/labs/*" element={<PrivateRoute><LabsRoutes /></PrivateRoute>} />
+              <Route path="/faculty/*" element={<PrivateRoute><Faculty /></PrivateRoute>} />
+              <Route path="/devices/*" element={<PrivateRoute><Devices /></PrivateRoute>} />
+              <Route path="/device/:code" element={<PublicDeviceDetail />} />
+              <Route path="/defective-stock" element={<PrivateRoute><DefectiveStock /></PrivateRoute>} />
+              <Route path="/central-store" element={<PrivateRoute><CentralStore /></PrivateRoute>} />
+              <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} />
+              <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+              <Route path="/issues" element={<PrivateRoute><IssuesPage /></PrivateRoute>} />
+              <Route path="/*" element={<Navigate to="/dashboard" replace />} />
+            </>
+          )}
         </Routes>
       </div>
     </div>

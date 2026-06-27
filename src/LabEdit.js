@@ -9,6 +9,7 @@ const LabEdit = () => {
     const [labName, setLabName] = useState('');
     const [location, setLocation] = useState('');
     const [capacity, setCapacity] = useState('');
+    const [assistantName, setAssistantName] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,6 +23,7 @@ const LabEdit = () => {
                 setLabName(labData.lab_name);
                 setLocation(labData.location || '');
                 setCapacity(labData.capacity || '');
+                setAssistantName(labData.assistant_name || '');
             } catch (err) {
                 setError('Failed to load lab details.');
                 console.error('Error fetching lab for edit:', err);
@@ -37,7 +39,7 @@ const LabEdit = () => {
         setIsSubmitting(true);
         setSubmitMessage(null);
         try {
-            await api.put(`/labs/${id}`, { lab_name: labName, location, capacity: parseInt(capacity, 10) });
+            await api.put(`/labs/${id}`, { lab_name: labName, location, capacity: parseInt(capacity, 10), assistant_name: assistantName });
             setSubmitMessage({ type: 'success', text: 'Lab updated successfully!' });
             setTimeout(() => navigate(`/labs/${id}`), 1500); // Redirect back to lab details after a short delay
         } catch (err) {
@@ -83,6 +85,17 @@ const LabEdit = () => {
                         id="capacity"
                         value={capacity}
                         onChange={(e) => setCapacity(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="assistantName" className="block text-sm font-medium text-gray-700">Lab Assistant Name</label>
+                    <input
+                        type="text"
+                        id="assistantName"
+                        value={assistantName}
+                        onChange={(e) => setAssistantName(e.target.value)}
+                        placeholder="e.g. John Doe"
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>

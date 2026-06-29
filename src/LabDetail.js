@@ -242,7 +242,7 @@ const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
                         {lab.assistant_name ? (
                             <div className="text-xs font-semibold text-indigo-600 flex items-center gap-1 mt-1 bg-indigo-50 px-2 py-1 rounded-lg w-max">
                                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
-                                Lab Assistant: {lab.assistant_name}
+                                Lab Assistent: {lab.assistant_name}
                             </div>
                         ) : (
                             <div className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1 bg-gray-100 px-2 py-1 rounded-lg w-max">

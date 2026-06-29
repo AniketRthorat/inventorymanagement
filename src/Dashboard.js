@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot, Laptop } from 'lucide-react'; // Import icons
+import { Printer, Cpu, Presentation, MousePointer2, Projector as ProjectorIcon, Mouse, Keyboard, MonitorDot, Laptop, Monitor } from 'lucide-react'; // Import icons
 import api from './api'; // Import the API client
 import InfoModal from './InfoModal';
 
@@ -173,41 +173,50 @@ const Dashboard = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Devices by Lab</h3>
-                    <div className="space-y-3">
-                        {devicesByLab.map((item) => (
-                            <div
-                                key={item.lab}
-                                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50"
-                                onClick={() => handleCardClick('devices_by_lab', { lab_id: item.lab_id, lab_name: item.lab })}
-                            >
-                                <span className="text-gray-700">{item.lab}</span>
-                                <span className="font-semibold text-blue-600">{item.count}</span>
+            {/* Devices by Lab - Card Grid */}
+            <div className="mb-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Devices by Lab</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {devicesByLab.map((item) => (
+                        <div
+                            key={item.lab}
+                            className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between"
+                            onClick={() => handleCardClick('devices_by_lab', { lab_id: item.lab_id, lab_name: item.lab })}
+                        >
+                            <div className="mb-4">
+                                <h4 className="text-lg font-semibold text-gray-800 mb-1">{item.lab}</h4>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <Monitor size={16} className="text-blue-500" />
+                                    <span className="font-semibold text-gray-700">{item.count || 0} Systems</span>
+                                </div>
                             </div>
-                        ))}
-                    </div>
+                            <div className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 px-3 py-2 rounded-lg mt-2">
+                                <span className="text-gray-400">Lab Assistent: </span>
+                                <span className="text-gray-800 font-bold">{item.assistant_name || 'N/A'}</span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Systems by Status</h3>
-                    <div className="space-y-3">
-                        {computersByStatus.map((item) => (
-                            <div
-                                key={item.status}
-                                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50"
-                                onClick={() => handleCardClick('systems_by_status', { status: item.status })}
-                            >
-                                <span className="text-gray-700">{item.status}</span>
-                                <span className={`font-semibold ${item.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {item.count}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
             </div>
-        </div>
+
+            {/* Systems by Status */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-8 font-medium">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Systems by Status</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {computersByStatus.map((item) => (
+                        <div
+                            key={item.status}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100/80 transition-colors"
+                            onClick={() => handleCardClick('systems_by_status', { status: item.status })}
+                        >
+                            <span className="text-sm font-semibold text-gray-700">{item.status}</span>
+                            <span className={`text-lg font-bold ${item.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
+                                {item.count}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
         {modalVisible && (
                 <InfoModal
                     title={modalContent.title}

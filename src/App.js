@@ -30,6 +30,14 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Handle post-login redirection if redirect param is present
+  useEffect(() => {
+    const redirectParam = new URLSearchParams(location.search).get('redirect');
+    if (isAuthenticated && location.pathname === '/login' && redirectParam) {
+      navigate(decodeURIComponent(redirectParam), { replace: true });
+    }
+  }, [isAuthenticated, location.pathname, location.search, navigate]);
+
   // Handle Google OAuth callback token and QR Redirect
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -49,8 +57,9 @@ function App() {
   const Sidebar = () => {
     const menuItems = userRole === 'assistant'
       ? [
+          { icon: Home, label: 'Home', path: '/dashboard' },
           { icon: FileText, label: 'Reported Issues', path: '/assistant-dashboard' },
-          { icon: AlertCircle, label: 'Issues', path: '/issues' }
+          { icon: AlertCircle, label: 'Issues History', path: '/issues' }
         ]
       : [
           { icon: Home, label: 'Home', path: '/dashboard' },
@@ -181,6 +190,22 @@ function App() {
     );
   }
 
+  const isDevicePage = location.pathname.startsWith('/device/');
+
+  if (isDevicePage) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+        <Routes>
+          {userRole === 'assistant' ? (
+            <Route path="/device/:code" element={<PublicDeviceDetail />} />
+          ) : (
+            <Route path="/device/:code" element={<PublicDeviceDetail />} />
+          )}
+        </Routes>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -189,10 +214,10 @@ function App() {
         <Routes>
           {userRole === 'assistant' ? (
             <>
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/assistant-dashboard" element={<PrivateRoute><LabAssistantDashboard /></PrivateRoute>} />
               <Route path="/issues" element={<PrivateRoute><IssuesPage /></PrivateRoute>} />
-              <Route path="/device/:code" element={<PublicDeviceDetail />} />
-              <Route path="/*" element={<Navigate to="/assistant-dashboard" replace />} />
+              <Route path="/*" element={<Navigate to="/dashboard" replace />} />
             </>
           ) : (
             <>
@@ -200,7 +225,6 @@ function App() {
               <Route path="/labs/*" element={<PrivateRoute><LabsRoutes /></PrivateRoute>} />
               <Route path="/faculty/*" element={<PrivateRoute><Faculty /></PrivateRoute>} />
               <Route path="/devices/*" element={<PrivateRoute><Devices /></PrivateRoute>} />
-              <Route path="/device/:code" element={<PublicDeviceDetail />} />
               <Route path="/defective-stock" element={<PrivateRoute><DefectiveStock /></PrivateRoute>} />
               <Route path="/central-store" element={<PrivateRoute><CentralStore /></PrivateRoute>} />
               <Route path="/invoices" element={<PrivateRoute><Invoices /></PrivateRoute>} />

@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     Monitor, Laptop, Printer, Mouse, Keyboard, Smartphone, Cpu,
     Box, AlertCircle, MapPin, User, ChevronLeft, Wrench, CheckCircle,
     Clock, ChevronDown, ChevronUp, Loader2
 } from 'lucide-react';
 import api from './api';
+import { useAuth } from './AuthContext';
 
 const PublicDeviceDetail = () => {
     const { code } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated, userRole, logout } = useAuth();
     const [device, setDevice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Maintenance modal state
     const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
-    const [assistantName, setAssistantName] = useState('');
+
     const [changesMade, setChangesMade] = useState('');
     const [submitLoading, setSubmitLoading] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -80,10 +83,22 @@ const PublicDeviceDetail = () => {
         fetchLabs();
     }, [code]);
 
+
+
+    // Automatically open maintenance modal if redirected from login with action=log_maintenance
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const action = params.get('action');
+        if (device && action === 'log_maintenance' && isAuthenticated && (userRole === 'assistant' || userRole === 'admin')) {
+            setIsMaintenanceModalOpen(true);
+        }
+    }, [device, location.search, isAuthenticated, userRole]);
+
     const handleMaintenanceSubmit = async () => {
         setSubmitError(null);
-        if (!assistantName.trim()) {
-            setSubmitError('Please enter your name.');
+        const activeAssistantName = (device?.assistant_name || 'Lab Assistant').trim();
+        if (!activeAssistantName) {
+            setSubmitError('Respective lab assistant name is not assigned.');
             return;
         }
         if (!changesMade.trim()) {
@@ -94,20 +109,17 @@ const PublicDeviceDetail = () => {
         setSubmitLoading(true);
         try {
             await api.post(`public/devices/${code}/maintenance`, {
-                assistant_name: assistantName.trim(),
+                assistant_name: activeAssistantName,
                 changes_made: changesMade.trim(),
             });
-            setSubmitSuccess(true);
             // Refresh device (to get updated last_maintenance_date) and logs
             await Promise.all([fetchDevice(), fetchMaintenanceLogs()]);
-            // Auto-close after 2 seconds
-            setTimeout(() => {
-                setIsMaintenanceModalOpen(false);
-                setSubmitSuccess(false);
-                setAssistantName('');
-                setChangesMade('');
-                setShowHistory(true); // Auto-expand history after logging
-            }, 2000);
+            setIsMaintenanceModalOpen(false);
+            setChangesMade('');
+            setShowHistory(true); // Auto-expand history after logging
+            window.alert('Maintenance logged successfully!');
+            logout(); // Clear session
+            navigate(`/device/${code}`);
         } catch (err) {
             setSubmitError(err.response?.data?.error || 'Failed to save maintenance log. Please try again.');
         } finally {
@@ -120,8 +132,9 @@ const PublicDeviceDetail = () => {
         setIsMaintenanceModalOpen(false);
         setSubmitSuccess(false);
         setSubmitError(null);
-        setAssistantName('');
         setChangesMade('');
+        logout(); // Clear session
+        navigate(`/device/${code}`);
     };
 
     const formatDate = (dateStr) => {
@@ -285,7 +298,13 @@ const PublicDeviceDetail = () => {
                         {/* Maintenance Button */}
                         <button
                             id="log-maintenance-btn"
-                            onClick={() => setIsMaintenanceModalOpen(true)}
+                            onClick={() => {
+                                if (isAuthenticated && (userRole === 'assistant' || userRole === 'admin')) {
+                                    setIsMaintenanceModalOpen(true);
+                                } else {
+                                    navigate(`/login?redirect=${encodeURIComponent(`/device/${code}?action=log_maintenance`)}`);
+                                }
+                            }}
                             className="w-full py-3 bg-green-50 text-green-700 rounded-xl font-bold hover:bg-green-100 transition-colors flex items-center justify-center gap-2 border border-green-200"
                         >
                             <Wrench size={18} />
@@ -389,16 +408,37 @@ const PublicDeviceDetail = () => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            Your Name <span className="text-red-500">*</span>
+                                            Lab Location
                                         </label>
                                         <input
-                                            id="assistant-name-input"
                                             type="text"
-                                            placeholder="e.g. Raju Sharma"
-                                            value={assistantName}
-                                            onChange={e => setAssistantName(e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent text-sm"
-                                            disabled={submitLoading}
+                                            value={device ? device.lab_name : 'N/A'}
+                                            readOnly
+                                            className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-500 text-sm cursor-not-allowed font-medium"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            Device Number
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={code || 'N/A'}
+                                            readOnly
+                                            className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-500 text-sm cursor-not-allowed font-medium"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            Lab Assistent Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={device ? (device.assistant_name || 'Not Assigned') : 'Loading...'}
+                                            readOnly
+                                            className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-500 text-sm cursor-not-allowed font-medium"
                                         />
                                     </div>
 

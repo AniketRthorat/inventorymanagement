@@ -1,6 +1,6 @@
 // inventory-management/src/LoginPage.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { LogIn, Mail, Lock } from 'lucide-react'; // Corrected import
 
@@ -9,18 +9,22 @@ const LoginPage = () => { // Corrected component definition
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         
+        const queryParams = new URLSearchParams(location.search);
+        const fromPath = queryParams.get('redirect') ? decodeURIComponent(queryParams.get('redirect')) : (location.state?.from || '');
+        
         if (username === "labadmin" && password === "cse@1644") {
             login('static_token', 'admin'); // Admin role
-            navigate('/dashboard');
+            navigate(fromPath || '/dashboard');
         } else if (username === "labassistant" && password === "cse@1644") {
             login('static_token', 'assistant'); // Assistant role
-            navigate('/assistant-dashboard');
+            navigate(fromPath || '/assistant-dashboard');
         } else {
             setError('Invalid username or password.');
         }

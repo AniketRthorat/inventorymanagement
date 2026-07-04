@@ -12,6 +12,8 @@ const Labs = () => {
     lab_name: '',
     location: '',
     capacity: '',
+    assistant_name: '',
+    assistant_phone: '',
   });
   const navigate = useNavigate();
 
@@ -59,6 +61,8 @@ const Labs = () => {
         lab_name: '',
         location: '',
         capacity: '',
+        assistant_name: '',
+        assistant_phone: '',
       });
       fetchLabs(); // Refresh the list of labs
     } catch (err) {
@@ -142,6 +146,22 @@ const Labs = () => {
                 name="capacity"
                 placeholder="Capacity"
                 value={newLab.capacity}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+              <input
+                type="text"
+                name="assistant_name"
+                placeholder="Lab Assistant Name"
+                value={newLab.assistant_name}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+              <input
+                type="text"
+                name="assistant_phone"
+                placeholder="Lab Assistant WhatsApp (e.g. +919876543210)"
+                value={newLab.assistant_phone}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               />

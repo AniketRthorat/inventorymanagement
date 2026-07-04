@@ -10,6 +10,7 @@ const LabEdit = () => {
     const [location, setLocation] = useState('');
     const [capacity, setCapacity] = useState('');
     const [assistantName, setAssistantName] = useState('');
+    const [assistantPhone, setAssistantPhone] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +25,7 @@ const LabEdit = () => {
                 setLocation(labData.location || '');
                 setCapacity(labData.capacity || '');
                 setAssistantName(labData.assistant_name || '');
+                setAssistantPhone(labData.assistant_phone || '');
             } catch (err) {
                 setError('Failed to load lab details.');
                 console.error('Error fetching lab for edit:', err);
@@ -39,7 +41,7 @@ const LabEdit = () => {
         setIsSubmitting(true);
         setSubmitMessage(null);
         try {
-            await api.put(`/labs/${id}`, { lab_name: labName, location, capacity: parseInt(capacity, 10), assistant_name: assistantName });
+            await api.put(`/labs/${id}`, { lab_name: labName, location, capacity: parseInt(capacity, 10), assistant_name: assistantName, assistant_phone: assistantPhone });
             setSubmitMessage({ type: 'success', text: 'Lab updated successfully!' });
             setTimeout(() => navigate(`/labs/${id}`), 1500); // Redirect back to lab details after a short delay
         } catch (err) {
@@ -88,7 +90,7 @@ const LabEdit = () => {
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>
-                <div>
+                 <div>
                     <label htmlFor="assistantName" className="block text-sm font-medium text-gray-700">Lab Assistant Name</label>
                     <input
                         type="text"
@@ -96,6 +98,17 @@ const LabEdit = () => {
                         value={assistantName}
                         onChange={(e) => setAssistantName(e.target.value)}
                         placeholder="e.g. John Doe"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="assistantPhone" className="block text-sm font-medium text-gray-700">Lab Assistant WhatsApp Number</label>
+                    <input
+                        type="text"
+                        id="assistantPhone"
+                        value={assistantPhone}
+                        onChange={(e) => setAssistantPhone(e.target.value)}
+                        placeholder="e.g. +919876543210"
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>

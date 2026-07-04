@@ -240,9 +240,16 @@ const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
                             <span>Capacity: {lab.capacity}</span>
                         </div>
                         {lab.assistant_name ? (
-                            <div className="text-xs font-semibold text-indigo-600 flex items-center gap-1 mt-1 bg-indigo-50 px-2 py-1 rounded-lg w-max">
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
-                                Lab Assistent: {lab.assistant_name}
+                            <div className="text-xs font-semibold text-indigo-600 flex flex-col gap-1 mt-1 bg-indigo-50 px-3 py-2 rounded-lg w-max">
+                                <div className="flex items-center gap-1">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                                    Lab Assistant: {lab.assistant_name}
+                                </div>
+                                {lab.assistant_phone && (
+                                    <div className="text-gray-500 text-[10px] pl-2.5">
+                                        WhatsApp: {lab.assistant_phone}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-xs font-semibold text-gray-500 flex items-center gap-1 mt-1 bg-gray-100 px-2 py-1 rounded-lg w-max">

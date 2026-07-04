@@ -24,6 +24,7 @@ const PublicDeviceDetail = () => {
     const [submitLoading, setSubmitLoading] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [submitError, setSubmitError] = useState(null);
+    const [selectedIssueIds, setSelectedIssueIds] = useState([]);
 
     // Issue modal state
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
@@ -94,6 +95,14 @@ const PublicDeviceDetail = () => {
         }
     }, [device, location.search, isAuthenticated, userRole]);
 
+    useEffect(() => {
+        if (isMaintenanceModalOpen && device?.pending_issues) {
+            setSelectedIssueIds(device.pending_issues.map(issue => issue.issue_id));
+        } else if (!isMaintenanceModalOpen) {
+            setSelectedIssueIds([]);
+        }
+    }, [isMaintenanceModalOpen, device]);
+
     const handleMaintenanceSubmit = async () => {
         setSubmitError(null);
         const activeAssistantName = (device?.assistant_name || 'Lab Assistant').trim();
@@ -111,11 +120,13 @@ const PublicDeviceDetail = () => {
             await api.post(`public/devices/${code}/maintenance`, {
                 assistant_name: activeAssistantName,
                 changes_made: changesMade.trim(),
+                resolved_issue_ids: selectedIssueIds,
             });
             // Refresh device (to get updated last_maintenance_date) and logs
             await Promise.all([fetchDevice(), fetchMaintenanceLogs()]);
             setIsMaintenanceModalOpen(false);
             setChangesMade('');
+            setSelectedIssueIds([]);
             setShowHistory(true); // Auto-expand history after logging
             window.alert('Maintenance logged successfully!');
             logout(); // Clear session
@@ -393,7 +404,7 @@ const PublicDeviceDetail = () => {
                             </div>
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-6 max-h-[85vh] overflow-y-auto">
                             {submitSuccess ? (
                                 /* Success State */
                                 <div className="flex flex-col items-center py-6 text-center">
@@ -441,6 +452,61 @@ const PublicDeviceDetail = () => {
                                             className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-500 text-sm cursor-not-allowed font-medium"
                                         />
                                     </div>
+
+                                    {device?.pending_issues && device.pending_issues.length > 0 && (
+                                        <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-semibold text-gray-700">Resolve Reported Issues</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (selectedIssueIds.length === device.pending_issues.length) {
+                                                            setSelectedIssueIds([]);
+                                                        } else {
+                                                            setSelectedIssueIds(device.pending_issues.map(i => i.issue_id));
+                                                        }
+                                                    }}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                                >
+                                                    {selectedIssueIds.length === device.pending_issues.length ? 'Deselect All' : 'Select All'}
+                                                </button>
+                                            </div>
+                                            <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+                                                {device.pending_issues.map(issue => {
+                                                    const isChecked = selectedIssueIds.includes(issue.issue_id);
+                                                    return (
+                                                        <label
+                                                            key={issue.issue_id}
+                                                            className={`flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors text-xs ${
+                                                                isChecked
+                                                                    ? 'bg-green-50/75 border-green-200 text-green-800'
+                                                                    : 'bg-white border-gray-150 text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={() => {
+                                                                    if (isChecked) {
+                                                                        setSelectedIssueIds(prev => prev.filter(id => id !== issue.issue_id));
+                                                                    } else {
+                                                                        setSelectedIssueIds(prev => [...prev, issue.issue_id]);
+                                                                    }
+                                                                }}
+                                                                className="mt-0.5 rounded text-green-600 focus:ring-green-400 border-gray-300 w-3.5 h-3.5"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium break-words">{issue.description}</p>
+                                                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                                                    Reported by {issue.student_class}-{issue.student_div} Roll {issue.student_roll_no} • {formatDate(issue.reported_at)}
+                                                                </p>
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">

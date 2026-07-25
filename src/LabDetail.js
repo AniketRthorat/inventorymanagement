@@ -107,7 +107,7 @@ const LabDetail = () => {
                 doc.setTextColor(37, 99, 235);
                 doc.text(tag, x + labelWidth / 2, y + 13, { align: 'center' });
 // QR Code
-const qrValue = `${window.location.origin}/?device=${tag}`;
+const qrValue = `http://sgideadstock.sginstitute.in/?device=${tag}`;
 const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
                 doc.addImage(qrDataUrl, 'PNG', x + (labelWidth - 25) / 2, y + 16, 25, 25);
 

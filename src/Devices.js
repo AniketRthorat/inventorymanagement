@@ -315,6 +315,9 @@ const DeviceList = () => {
             device.device_name.toLowerCase().includes(query) ||
             device.device_type.toLowerCase().includes(query) ||
             (device.company && device.company.toLowerCase().includes(query)) ||
+            (device.cpu && device.cpu.toLowerCase().includes(query)) ||
+            (device.ip_generation && device.ip_generation.toLowerCase().includes(query)) ||
+            (device.invoice_number && device.invoice_number.toLowerCase().includes(query)) ||
             (lab && lab.lab_name.toLowerCase().includes(query)) ||
             (facultyMember && facultyMember.faculty_name.toLowerCase().includes(query)) ||
             assetTag.includes(query)
@@ -335,7 +338,7 @@ const DeviceList = () => {
                     <div className="relative flex-1">
                         <input
                             type="text"
-                            placeholder="Search by Name, Tag (e.g. SGI-), or Lab..."
+                            placeholder="Search by Name, Model Name, Tag (e.g. CSE-), or Lab..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm"
@@ -404,6 +407,17 @@ const DeviceList = () => {
                     </button>
                 </div>
             </div>
+            <div className="flex justify-between items-center mb-3 px-1">
+                {searchQuery.trim() || filterType || filterLabId ? (
+                    <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                        {filteredDevices.length} {filteredDevices.length === 1 ? 'Result' : 'Results'} found
+                    </span>
+                ) : (
+                    <span className="text-xs text-gray-500 font-medium">
+                        Total Devices: {devices.length}
+                    </span>
+                )}
+            </div>
             {error && <p style={{ color: 'red' }}>{error}</p>}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -414,7 +428,8 @@ const DeviceList = () => {
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Name</th>
                                 <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Company</th>
                                 <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Location</th>
-                                <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Assigned To</th>
+                                <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Model Name</th>
+                                <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">IP Generation</th>
                                 <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Storage</th>
                                 <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">RAM</th>
                                 <th className="px-3 py-4 text-left text-sm font-semibold text-gray-700">Invoice #</th>
@@ -435,12 +450,13 @@ const DeviceList = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-gray-800 font-medium">{device.device_name}</td>
-                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.company}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.company || 'N/A'}</td>
                                         <td className="px-3 py-4 text-gray-600 text-sm">{assignedLab ? assignedLab.lab_name : 'N/A'}</td>
-                                        <td className="px-3 py-4 text-gray-600 text-sm">{assignedFaculty ? assignedFaculty.faculty_name : 'N/A'}</td>
-                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.storage} GB</td>
-                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.ram} GB</td>
-                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.invoice_number}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.cpu || 'N/A'}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.ip_generation || 'N/A'}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.storage ? `${device.storage} GB` : 'N/A'}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.ram ? `${device.ram} GB` : 'N/A'}</td>
+                                        <td className="px-3 py-4 text-gray-600 text-sm">{device.invoice_number || 'N/A'}</td>
                                         <td className="px-3 py-4">
                                             <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${device.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                                                 }`}>
@@ -797,7 +813,7 @@ const DeviceDetail = () => {
                         <p className="text-gray-600 mb-1">Company: {device.company}</p>
                         <p className="text-gray-600 mb-1">Labels: {device.labels}</p>
                         <p className="text-sm text-gray-600 mb-1">Status: {device.status}</p>
-                        <p className="text-sm text-gray-600 mb-1">CPU: {device.cpu}</p>
+                        <p className="text-sm text-gray-600 mb-1">Model Name: {device.cpu}</p>
                         <p className="text-sm text-gray-600 mb-1">IP Generation: {device.ip_generation}</p>
                         <p className="text-sm text-gray-600 mb-1">RAM: {device.ram} GB</p>
                         <p className="text-sm text-gray-600 mb-1">Storage: {device.storage} GB</p>
@@ -924,7 +940,7 @@ const DeviceDetail = () => {
                                 <div className="bg-white p-2 border border-gray-100 rounded-lg mb-4">
                                     <QRCodeCanvas
                                         id="qr-canvas"
-                                        value={`${window.location.origin}/?device=${encodeDeviceId(device.device_id)}`}
+                                        value={`http://sgideadstock.sginstitute.in/?device=${encodeDeviceId(device.device_id)}`}
                                         size={180}
                                         level={"H"}
                                         includeMargin={true}

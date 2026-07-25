@@ -4,18 +4,18 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(() => localStorage.getItem('jwtToken'));
-    const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || 'admin');
+    const [token, setToken] = useState(() => sessionStorage.getItem('jwtToken'));
+    const [userRole, setUserRole] = useState(() => sessionStorage.getItem('userRole') || 'admin');
     const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
     useEffect(() => {
         if (token) {
-            localStorage.setItem('jwtToken', token);
-            localStorage.setItem('userRole', userRole);
+            sessionStorage.setItem('jwtToken', token);
+            sessionStorage.setItem('userRole', userRole);
             setIsAuthenticated(true);
         } else {
-            localStorage.removeItem('jwtToken');
-            localStorage.removeItem('userRole');
+            sessionStorage.removeItem('jwtToken');
+            sessionStorage.removeItem('userRole');
             setIsAuthenticated(false);
         }
     }, [token, userRole]);

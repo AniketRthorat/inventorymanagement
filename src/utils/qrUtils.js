@@ -3,7 +3,7 @@ const BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /**
  * Encodes a device ID into a unique string tag.
  * @param {number} id - The database ID of the device.
- * @returns {string} - The encoded tag (e.g., SGI-1a2b).
+ * @returns {string} - The encoded tag (e.g., CSE-1a2b).
  */
 export const encodeDeviceId = (id) => {
     if (!id) return '';
@@ -13,7 +13,7 @@ export const encodeDeviceId = (id) => {
         res = BASE62[num % 62] + res;
         num = Math.floor(num / 62);
     }
-    return `SGI-${res}`;
+    return `CSE-${res}`;
 };
 
 /**
@@ -23,7 +23,12 @@ export const encodeDeviceId = (id) => {
  */
 export const decodeDeviceId = (code) => {
     if (!code) return null;
-    let str = code.startsWith('SGI-') ? code.substring(4) : code;
+    let str = code;
+    if (code.startsWith('CSE-')) {
+        str = code.substring(4);
+    } else if (code.startsWith('SGI-')) {
+        str = code.substring(4);
+    }
     let num = 0;
     for (let i = 0; i < str.length; i++) {
         const index = BASE62.indexOf(str[i]);

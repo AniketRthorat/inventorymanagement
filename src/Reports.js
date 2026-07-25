@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Report from './Report';
 import api from './api';
+import { SGI_LOGO_BASE64 } from './sgiLogoBase64';
 
 const Reports = () => {
     const navigate = useNavigate();
@@ -39,64 +40,155 @@ const Reports = () => {
 
         try {
             const doc = new jsPDF();
-
-            // Add Header
             const pageWidth = doc.internal.pageSize.getWidth();
 
-            // Institute Name
+            const logoWidth = 18;
+            const logoHeight = 20;
+            const gap = 4;
+
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(22);
-            doc.setTextColor(26, 26, 26);
-            doc.text("SANJAY GHODAWAT INSTITUTE", pageWidth / 2, 20, { align: "center" });
-
-            // Institute Subtext
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
-            doc.setTextColor(75, 85, 99);
-            doc.text("Approved by A.I.C.T.E. New Delhi, and Recognized by DTE Mumbai, Govt. of Maharashtra", pageWidth / 2, 26, { align: "center" });
-
-            let yPos = 40;
-
-            // Add Title
             doc.setFontSize(18);
+            const titleWidth = doc.getTextWidth("SANJAY GHODAWAT INSTITUTE");
+            const totalBlockWidth = logoWidth + gap + titleWidth;
+
+            const logoX = (pageWidth - totalBlockWidth) / 2;
+            const textX = logoX + logoWidth + gap;
+
+            // Draw Header Logo (left side of block)
+            doc.addImage(SGI_LOGO_BASE64, 'PNG', logoX, 10, logoWidth, logoHeight);
+
+            // Draw Institute Name
+            doc.setTextColor(17, 24, 39);
+            doc.text("SANJAY GHODAWAT INSTITUTE", textX, 19);
+
+            // Draw Subtext
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7.5);
+            doc.setTextColor(55, 65, 81);
+            doc.text("Approved by A.I.C.T.E. New Delhi, and Recognized by DTE Mumbai, Govt. of Maharashtra", textX, 25);
+
+            // Red Accent Line
+            doc.setDrawColor(227, 27, 35);
+            doc.setLineWidth(0.8);
+            doc.line(14, 34, pageWidth - 14, 34);
+
+            let yPos = 44;
+
+            // Report Title & Date
+            doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 0, 0);
-            doc.text(selectedReport.title, 14, yPos);
+            doc.setTextColor(17, 24, 39);
+            doc.text(selectedReport.title.toUpperCase(), 14, yPos);
+
+            const formattedDate = `Generated on: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(107, 114, 128);
+            doc.text(formattedDate, pageWidth - 14, yPos, { align: "right" });
+
             yPos += 8;
 
-            // Add generated date
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPos);
-            yPos += 10;
-
-            // Add Summary Section
+            // Summary Section Cards
             if (reportData.summary) {
-                doc.setFontSize(14);
-                yPos += 5;
+                yPos += 4;
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(75, 85, 99);
+                doc.text("SUMMARY OVERVIEW", 14, yPos);
+                yPos += 6;
 
-                doc.setFontSize(12);
-                Object.entries(reportData.summary).forEach(([key, value]) => {
-                    doc.text(`${key}: ${value}`, 14, yPos);
-                    yPos += 7;
+                const summaryEntries = Object.entries(reportData.summary);
+                let currentX = 14;
+                const cardWidth = 55;
+                const cardHeight = 16;
+
+                summaryEntries.forEach(([key, value]) => {
+                    if (currentX + cardWidth > pageWidth - 14) {
+                        currentX = 14;
+                        yPos += cardHeight + 4;
+                    }
+
+                    // Card Background
+                    doc.setFillColor(249, 250, 251);
+                    doc.setDrawColor(229, 231, 235);
+                    doc.setLineWidth(0.2);
+                    doc.roundedRect(currentX, yPos, cardWidth, cardHeight, 1.5, 1.5, 'FD');
+
+                    // Left Accent Line
+                    doc.setFillColor(227, 27, 35);
+                    doc.rect(currentX, yPos, 1.5, cardHeight, 'F');
+
+                    // Card Text
+                    doc.setFontSize(7.5);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(107, 114, 128);
+                    doc.text(key.toUpperCase(), currentX + 5, yPos + 5);
+
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(17, 24, 39);
+                    doc.text(String(value), currentX + 5, yPos + 12);
+
+                    currentX += cardWidth + 6;
                 });
-                yPos += 10;
+
+                yPos += cardHeight + 10;
+            } else {
+                yPos += 6;
             }
 
             // Prepare table data
             const tableHeaders = reportData.columns.map(col => col.Header);
             const tableBody = reportData.tableData.map(row =>
-                reportData.columns.map(col => row[col.accessor])
+                reportData.columns.map(col => (row[col.accessor] !== undefined && row[col.accessor] !== null ? row[col.accessor] : 'N/A'))
             );
 
-            // Add Table
+            // Add Table with AutoTable
             autoTable(doc, {
                 head: [tableHeaders],
                 body: tableBody,
                 startY: yPos,
                 theme: 'grid',
-                headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], lineWidth: 0.1, lineColor: [0, 0, 0] },
-                styles: { fontSize: 10 },
+                headStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [30, 41, 59],
+                    fontStyle: 'bold',
+                    fontSize: 8.5,
+                    lineWidth: 0.1,
+                    lineColor: [203, 213, 225],
+                },
+                bodyStyles: {
+                    textColor: [51, 65, 85],
+                    fontSize: 8.5,
+                    lineWidth: 0.1,
+                    lineColor: [226, 232, 240],
+                },
+                alternateRowStyles: {
+                    fillColor: [248, 250, 252],
+                },
+                margin: { top: 48, bottom: 20 },
+                didDrawPage: (data) => {
+                    // Header on page > 1
+                    if (data.pageNumber > 1) {
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(9);
+                        doc.setTextColor(17, 24, 39);
+                        doc.text("SANJAY GHODAWAT INSTITUTE - " + selectedReport.title.toUpperCase(), pageWidth / 2, 15, { align: "center" });
+
+                        doc.setDrawColor(227, 27, 35);
+                        doc.setLineWidth(0.5);
+                        doc.line(14, 18, pageWidth - 14, 18);
+                    }
+
+                    // Footer on all pages
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(148, 163, 184);
+
+                    doc.text("Inventory Management System • Official Record", 14, pageHeight - 10);
+                    doc.text(`Page ${data.pageNumber} of ${doc.internal.getNumberOfPages()}`, pageWidth - 14, pageHeight - 10, { align: "right" });
+                }
             });
 
             doc.save(`${selectedReport.title.replace(/\s/g, '_')}.pdf`);
@@ -125,23 +217,28 @@ const Reports = () => {
                     { Header: 'Sr.No', accessor: 'sr_no' },
                     { Header: 'Name', accessor: 'device_name' },
                     { Header: 'Type', accessor: 'device_type' },
-                    { Header: 'Status', accessor: 'status' },
+                    { Header: 'Company', accessor: 'company' },
                     { Header: 'Lab', accessor: 'lab_name' },
-                    { Header: 'Assigned To', accessor: 'faculty_name' },
+                    { Header: 'Model Name', accessor: 'cpu' },
+                    { Header: 'IP Generation', accessor: 'ip_generation' },
                     { Header: 'Storage (GB)', accessor: 'storage' },
                     { Header: 'RAM (GB)', accessor: 'ram' },
+                    { Header: 'Status', accessor: 'status' },
                 ];
 
                 const reportTableData = activeDevices.map((device, index) => {
                     const assignedLab = labs.find(l => l.lab_id === device.lab_id);
-                    const assignedFaculty = faculty.find(f => f.faculty_id === device.faculty_id);
                     return {
                         sr_no: index + 1, // Sequential number starting from 1
                         ...device,
                         device_name: formatString(device.device_name),
                         device_type: formatDeviceType(device.device_type),
+                        company: formatString(device.company || 'N/A'),
                         lab_name: assignedLab ? formatString(assignedLab.lab_name) : 'N/A',
-                        faculty_name: assignedFaculty ? formatString(assignedFaculty.faculty_name) : 'N/A',
+                        cpu: device.cpu || 'N/A',
+                        ip_generation: device.ip_generation || 'N/A',
+                        storage: device.storage ? `${device.storage}` : 'N/A',
+                        ram: device.ram ? `${device.ram}` : 'N/A',
                     };
                 });
 
@@ -223,6 +320,8 @@ const Reports = () => {
                     { Header: 'Name', accessor: 'device_name' },
                     { Header: 'Type', accessor: 'device_type' },
                     { Header: 'Company', accessor: 'company' },
+                    { Header: 'Model Name', accessor: 'cpu' },
+                    { Header: 'IP Generation', accessor: 'ip_generation' },
                     { Header: 'Status', accessor: 'status' },
                 ];
 
@@ -230,7 +329,9 @@ const Reports = () => {
                     sr_no: index + 1,
                     device_name: formatString(device.device_name),
                     device_type: formatDeviceType(device.device_type),
-                    company: formatString(device.company),
+                    company: formatString(device.company || 'N/A'),
+                    cpu: device.cpu || 'N/A',
+                    ip_generation: device.ip_generation || 'N/A',
                     status: device.status,
                 }));
 
@@ -301,6 +402,9 @@ const Reports = () => {
                 { Header: 'Device Name', accessor: 'device_name' },
                 { Header: 'Type', accessor: 'device_type' },
                 { Header: 'Company', accessor: 'company' },
+                { Header: 'Model Name', accessor: 'cpu' },
+                { Header: 'IP Generation', accessor: 'ip_generation' },
+                { Header: 'Storage (GB)', accessor: 'storage' },
                 { Header: 'RAM (GB)', accessor: 'ram' },
                 { Header: 'Status', accessor: 'status' },
             ];
@@ -310,6 +414,12 @@ const Reports = () => {
                 ...device,
                 device_name: formatString(device.device_name),
                 device_type: formatDeviceType(device.device_type),
+                company: formatString(device.company || 'N/A'),
+                cpu: device.cpu || 'N/A',
+                ip_generation: device.ip_generation || 'N/A',
+                storage: device.storage ? `${device.storage}` : 'N/A',
+                ram: device.ram ? `${device.ram}` : 'N/A',
+                status: device.status,
             }));
 
             setReportData({

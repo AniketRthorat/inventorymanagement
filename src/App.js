@@ -46,7 +46,7 @@ function App() {
 
     if (token) {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('jwtToken', token);
+        sessionStorage.setItem('jwtToken', token);
       }
       navigate('/dashboard'); // Redirect to dashboard after setting token
     } else if (deviceCode) {

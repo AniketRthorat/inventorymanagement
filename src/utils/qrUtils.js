@@ -23,11 +23,14 @@ export const encodeDeviceId = (id) => {
  */
 export const decodeDeviceId = (code) => {
     if (!code) return null;
-    let str = code;
-    if (code.startsWith('CSE-')) {
-        str = code.substring(4);
-    } else if (code.startsWith('SGI-')) {
-        str = code.substring(4);
+    let str = code.toString().trim();
+    if (str.startsWith('CSE-')) {
+        str = str.substring(4);
+    } else if (str.startsWith('SGI-')) {
+        str = str.substring(4);
+    }
+    if (/^\d+$/.test(str)) {
+        return parseInt(str, 10);
     }
     let num = 0;
     for (let i = 0; i < str.length; i++) {

@@ -1,8 +1,8 @@
 // inventory-management/src/api.js
 import axios from 'axios';
 
-// Backend is deployed on Cloudflare Workers — always use the remote URL
-export const API_BASE_URL = 'https://inventory-backend.cse-tech.workers.dev/api/';
+// Backend base URL — uses environment variable if defined, falling back to Cloudflare Workers URL
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://inventory-backend.cse-tech.workers.dev/api/';
 
 // Function to serialize parameters for Axios
 const serializeParams = (params) => {

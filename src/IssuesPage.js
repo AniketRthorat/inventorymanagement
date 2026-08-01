@@ -4,6 +4,19 @@ import { AlertCircle, CheckCircle2, Check, ChevronRight, X, Trash2 } from 'lucid
 import api from './api';
 import { useAuth } from './AuthContext';
 
+const formatReporterInfo = (issue) => {
+    if (!issue) return 'N/A';
+    const isFaculty = issue.student_class?.toLowerCase() === 'faculty' || issue.student_div?.toLowerCase() === 'faculty';
+    if (isFaculty) {
+        const name = issue.student_roll_no && issue.student_roll_no !== 'Faculty' && issue.student_roll_no !== 'Staff'
+            ? issue.student_roll_no
+            : 'Faculty Member';
+        return `${name} (Faculty)`;
+    }
+    return `Class ${issue.student_class}/${issue.student_div} (Roll ${issue.student_roll_no})`;
+};
+
+
 const CountdownTimer = ({ reportedAt }) => {
     const [timeLeft, setTimeLeft] = useState('');
     const [isEscalated, setIsEscalated] = useState(false);
@@ -186,7 +199,7 @@ const IssuesPage = () => {
                                             <td className="px-4 py-3.5">
                                                 <div className="font-bold text-gray-900">{issue.device_name || 'N/A'}</div>
                                                 <div className="text-xs text-gray-500 font-normal">
-                                                    Class {issue.student_class}/{issue.student_div} (Roll {issue.student_roll_no})
+                                                    {formatReporterInfo(issue)}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3.5">
@@ -268,7 +281,7 @@ const IssuesPage = () => {
                                             <td className="px-4 py-3.5">
                                                 <div className="font-bold text-gray-900">{issue.device_name || 'N/A'}</div>
                                                 <div className="text-xs text-gray-500 font-normal">
-                                                    Class {issue.student_class}/{issue.student_div} (Roll {issue.student_roll_no})
+                                                    {formatReporterInfo(issue)}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3.5 text-gray-900 font-medium">

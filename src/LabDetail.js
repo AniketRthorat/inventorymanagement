@@ -106,9 +106,10 @@ const LabDetail = () => {
                 doc.setFontSize(14);
                 doc.setTextColor(37, 99, 235);
                 doc.text(tag, x + labelWidth / 2, y + 13, { align: 'center' });
-// QR Code
-const qrValue = `http://sgideadstock.sginstitute.in/?device=${tag}`;
-const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
+                // Official domain fallback
+                const originUrl = window.location.origin.includes('localhost') ? 'http://sgideadstock.sginstitute.in' : window.location.origin;
+                const qrValue = `${originUrl}/?device=${tag}`;
+                const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
                 doc.addImage(qrDataUrl, 'PNG', x + (labelWidth - 25) / 2, y + 16, 25, 25);
 
                 doc.setFontSize(8);

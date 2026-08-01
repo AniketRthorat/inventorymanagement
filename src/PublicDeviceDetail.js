@@ -3,10 +3,22 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
     Monitor, Laptop, Printer, Mouse, Keyboard, Smartphone, Cpu,
     Box, AlertCircle, MapPin, User, ChevronLeft, Wrench, CheckCircle,
-    Clock, ChevronDown, ChevronUp, Loader2
+    Clock, ChevronDown, ChevronUp, Loader2, Phone
 } from 'lucide-react';
 import api from './api';
 import { useAuth } from './AuthContext';
+
+const formatReporterInfo = (issue) => {
+    if (!issue) return 'N/A';
+    const isFaculty = issue.student_class?.toLowerCase() === 'faculty' || issue.student_div?.toLowerCase() === 'faculty';
+    if (isFaculty) {
+        const name = issue.student_roll_no && issue.student_roll_no !== 'Faculty' && issue.student_roll_no !== 'Staff'
+            ? issue.student_roll_no
+            : 'Faculty Member';
+        return `${name} (Faculty)`;
+    }
+    return `Class ${issue.student_class}/${issue.student_div} (Roll ${issue.student_roll_no})`;
+};
 
 const PublicDeviceDetail = () => {
     const { code } = useParams();
@@ -230,12 +242,31 @@ const PublicDeviceDetail = () => {
                     {/* Details */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <MapPin className="text-blue-500 w-5 h-5" />
-                            <div>
+                            <MapPin className="text-blue-500 w-5 h-5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-500 uppercase font-semibold">Location</p>
-                                <p className="text-gray-800 font-medium">{device.lab_name || 'Not Assigned'}</p>
+                                <p className="text-gray-800 font-medium">{device.lab_name || device.faculty_location || device.department || 'Not Assigned'}</p>
                             </div>
                         </div>
+
+                        {device.assistant_name && (
+                            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <User className="text-blue-500 w-5 h-5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-gray-500 uppercase font-semibold">Lab Assistant</p>
+                                    <p className="text-gray-800 font-medium">{device.assistant_name}</p>
+                                    {device.assistant_phone && (
+                                        <a
+                                            href={`tel:${device.assistant_phone}`}
+                                            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 mt-0.5"
+                                        >
+                                            <Phone size={12} />
+                                            {device.assistant_phone}
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {device.company && (
                             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -498,7 +529,7 @@ const PublicDeviceDetail = () => {
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="font-medium break-words">{issue.description}</p>
                                                                 <p className="text-[10px] text-gray-400 mt-0.5">
-                                                                    Reported by {issue.student_class}-{issue.student_div} Roll {issue.student_roll_no} • {formatDate(issue.reported_at)}
+                                                                    Reported by {formatReporterInfo(issue)} • {formatDate(issue.reported_at)}
                                                                 </p>
                                                             </div>
                                                         </label>
@@ -583,40 +614,140 @@ const PublicDeviceDetail = () => {
                                         <CheckCircle size={36} className="text-red-600" />
                                     </div>
                                     <h3 className="text-xl font-bold text-gray-800 mb-1">Submitted!</h3>
-                                    <p className="text-gray-500 text-sm">Issue has been successfully reported to the Lab Assistant.</p>
+                                    <p className="text-gray-500 text-sm">Issue has been successfully reported for this system.</p>
+                                </div>
+                            ) : device.faculty_name ? (
+                                /* Faculty System Issue Form */
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            Faculty Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={device.faculty_name}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl bg-gray-50 text-gray-700 text-sm font-medium outline-none cursor-not-allowed"
+                                            disabled
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            Department
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={
+                                                device.department && device.department !== 'N/A'
+                                                    ? device.department
+                                                    : (device.device_name?.includes('/CSE/') || device.device_name?.includes('CSE'))
+                                                        ? 'Computer Science & Engineering'
+                                                        : (device.lab_name || device.faculty_location || 'Computer Science & Engineering')
+                                            }
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl bg-gray-50 text-gray-700 text-sm font-normal outline-none cursor-not-allowed"
+                                            disabled
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            Describe the Issue <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            placeholder="Explain what is not working with your system (e.g. System not turning on, Keyboard keys not responding, Monitor display flickering...)"
+                                            value={issueDescription}
+                                            onChange={e => setIssueDescription(e.target.value)}
+                                            rows={4}
+                                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm resize-none"
+                                            disabled={issueSubmitLoading}
+                                        />
+                                    </div>
+
+                                    {issueSubmitError && (
+                                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                            <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                                            <p className="text-red-600 text-sm">{issueSubmitError}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            onClick={() => {
+                                                setIsIssueModalOpen(false);
+                                                setIssueSubmitError(null);
+                                            }}
+                                            disabled={issueSubmitLoading}
+                                            className="flex-1 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all text-sm shadow-sm"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                setIssueSubmitError(null);
+                                                if (!issueDescription.trim()) {
+                                                    setIssueSubmitError('Please describe the issue.');
+                                                    return;
+                                                }
+
+                                                setIssueSubmitLoading(true);
+                                                try {
+                                                    await api.post(`public/devices/${code}/issues`, {
+                                                        lab_id: device.lab_id ? parseInt(device.lab_id, 10) : null,
+                                                        student_class: 'Faculty',
+                                                        student_div: device.department || 'Faculty',
+                                                        student_roll_no: device.faculty_name || 'Staff',
+                                                        description: issueDescription.trim()
+                                                    });
+                                                    setIssueSubmitSuccess(true);
+                                                    setTimeout(() => {
+                                                        setIsIssueModalOpen(false);
+                                                        setIssueSubmitSuccess(false);
+                                                        setIssueDescription('');
+                                                    }, 2000);
+                                                } catch (err) {
+                                                    setIssueSubmitError(err.response?.data?.error || 'Failed to submit issue report. Please try again.');
+                                                } finally {
+                                                    setIssueSubmitLoading(false);
+                                                }
+                                            }}
+                                            disabled={issueSubmitLoading}
+                                            className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-70 shadow-sm"
+                                        >
+                                            {issueSubmitLoading ? (
+                                                <><Loader2 size={16} className="animate-spin" /> Submitting...</>
+                                            ) : (
+                                                <><CheckCircle size={16} /> Submit Report</>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
-                                /* Form */
+                                /* Student Lab Form */
                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
                                                 System Number
                                             </label>
                                             <input
                                                 type="text"
                                                 value={device.device_name}
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 text-sm outline-none cursor-not-allowed"
+                                                title={device.device_name}
+                                                className="w-full px-3.5 py-2 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 text-sm font-normal outline-none cursor-not-allowed"
                                                 disabled
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                                Lab Location <span className="text-red-500">*</span>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                                Lab Location
                                             </label>
-                                            <select
-                                                value={selectedLabId}
-                                                onChange={e => setSelectedLabId(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm"
-                                                disabled={issueSubmitLoading}
-                                            >
-                                                <option value="">Select Lab</option>
-                                                {labs.map(lab => (
-                                                    <option key={lab.lab_id} value={lab.lab_id}>
-                                                        {lab.lab_name}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <input
+                                                type="text"
+                                                value={device.lab_name || 'Lab Location'}
+                                                title={device.lab_name || 'Lab Location'}
+                                                className="w-full px-3.5 py-2 border border-gray-200 rounded-xl bg-gray-50 text-gray-700 text-sm font-normal outline-none cursor-not-allowed"
+                                                disabled
+                                            />
                                         </div>
                                     </div>
 
@@ -709,10 +840,6 @@ const PublicDeviceDetail = () => {
                                                     setIssueSubmitError('Please enter your roll number.');
                                                     return;
                                                 }
-                                                if (!selectedLabId) {
-                                                    setIssueSubmitError('Please select a lab.');
-                                                    return;
-                                                }
                                                 if (!issueDescription.trim()) {
                                                     setIssueSubmitError('Please describe the issue.');
                                                     return;
@@ -721,7 +848,7 @@ const PublicDeviceDetail = () => {
                                                 setIssueSubmitLoading(true);
                                                 try {
                                                     await api.post(`public/devices/${code}/issues`, {
-                                                        lab_id: parseInt(selectedLabId, 10),
+                                                        lab_id: device.lab_id ? parseInt(device.lab_id, 10) : (selectedLabId ? parseInt(selectedLabId, 10) : null),
                                                         student_class: studentClass.trim(),
                                                         student_div: studentDiv.trim(),
                                                         student_roll_no: studentRollNo.trim(),

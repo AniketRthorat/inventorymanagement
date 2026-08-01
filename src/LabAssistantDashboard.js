@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, Clock, MapPin, Monitor, User, Check, X } from 'lucide-react';
 import api from './api';
 
+const formatReporterInfo = (issue) => {
+    if (!issue) return 'N/A';
+    const isFaculty = issue.student_class?.toLowerCase() === 'faculty' || issue.student_div?.toLowerCase() === 'faculty';
+    if (isFaculty) {
+        const name = issue.student_roll_no && issue.student_roll_no !== 'Faculty' && issue.student_roll_no !== 'Staff'
+            ? issue.student_roll_no
+            : 'Faculty Member';
+        return `${name} (Faculty)`;
+    }
+    return `Class ${issue.student_class}/${issue.student_div} (Roll ${issue.student_roll_no})`;
+};
+
+
 const CountdownTimer = ({ reportedAt }) => {
     const [timeLeft, setTimeLeft] = useState('');
     const [isLowTime, setIsLowTime] = useState(false);
@@ -185,7 +198,7 @@ const LabAssistantDashboard = () => {
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-600">
                                         <User size={14} className="text-gray-400" />
-                                        <span><strong>Student:</strong> Class {issue.student_class}/{issue.student_div} (Roll {issue.student_roll_no})</span>
+                                        <span><strong>Reporter:</strong> {formatReporterInfo(issue)}</span>
                                     </div>
                                 </div>
 
@@ -256,7 +269,7 @@ const LabAssistantDashboard = () => {
                                             <td className="px-5 py-4">
                                                 <div className="font-bold text-gray-900">{issue.device_name || 'N/A'}</div>
                                                 <div className="text-xs text-gray-500 font-normal">
-                                                    Class {issue.student_class}/{issue.student_div} (Roll {issue.student_roll_no})
+                                                    {formatReporterInfo(issue)}
                                                 </div>
                                             </td>
                                             <td className="px-5 py-4 text-gray-900">

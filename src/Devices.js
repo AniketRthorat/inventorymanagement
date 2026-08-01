@@ -3,6 +3,8 @@ import { Plus, X, Monitor, Printer as PrinterIcon, Laptop, ChevronRight, Edit2, 
 import { useNavigate, useParams, Routes, Route, useLocation } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import api, { API_BASE_URL } from './api';
 import AddInvoiceModal from './AddInvoiceModal';
 import { encodeDeviceId } from './utils/qrUtils';
@@ -723,6 +725,59 @@ const DeviceDetail = () => {
         }
     };
 
+    const downloadPDFLabel = async () => {
+        try {
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            });
+
+            const labelWidth = 85;
+            const labelHeight = 50;
+            const x = 12;
+            const y = 15;
+
+            doc.setDrawColor(220);
+            doc.rect(x, y, labelWidth, labelHeight);
+
+            const headerText = assignedFaculty?.department || assignedLab?.lab_name || 'FACULTY DEVICE';
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.setFont('helvetica', 'bold');
+            doc.text(headerText.toUpperCase(), x + labelWidth / 2, y + 6, { align: 'center' });
+
+            const tag = `CSE-${String(device.device_id).padStart(4, '0')}`;
+            doc.setFontSize(14);
+            doc.setTextColor(37, 99, 235);
+            doc.setFont('helvetica', 'bold');
+            doc.text(tag, x + labelWidth / 2, y + 13, { align: 'center' });
+
+            const originUrl = window.location.origin.includes('localhost')
+                ? 'http://sgideadstock.sginstitute.in'
+                : window.location.origin;
+            const qrValue = `${originUrl}/?device=${tag}`;
+            const qrDataUrl = await QRCode.toDataURL(qrValue, { margin: 1, width: 200 });
+            doc.addImage(qrDataUrl, 'PNG', x + (labelWidth - 25) / 2, y + 16, 25, 25);
+
+            doc.setFontSize(8);
+            doc.setTextColor(50);
+            doc.setFont('helvetica', 'normal');
+            doc.text(device.device_name, x + labelWidth / 2, y + 45, { align: 'center' });
+
+            doc.setFontSize(6);
+            doc.setTextColor(180);
+            doc.setFont('helvetica', 'normal');
+            doc.text('SCAN FOR DEVICE DETAILS', x + labelWidth / 2, y + 48, { align: 'center' });
+
+            doc.save(`${tag}_Device_QR_Label.pdf`);
+        } catch (err) {
+            console.error('Error generating single device QR PDF:', err);
+            alert('Failed to generate PDF label.');
+        }
+    };
+
+
 
     if (loading) return <div>Loading device details...</div>;
     if (error) return <div style={{ color: 'red' }}>{error}</div>;
@@ -940,7 +995,7 @@ const DeviceDetail = () => {
                                 <div className="bg-white p-2 border border-gray-100 rounded-lg mb-4">
                                     <QRCodeCanvas
                                         id="qr-canvas"
-                                        value={`http://sgideadstock.sginstitute.in/?device=${encodeDeviceId(device.device_id)}`}
+                                        value={`${window.location.origin.includes('localhost') ? 'http://sgideadstock.sginstitute.in' : window.location.origin}/?device=${encodeDeviceId(device.device_id)}`}
                                         size={180}
                                         level={"H"}
                                         includeMargin={true}
@@ -955,10 +1010,17 @@ const DeviceDetail = () => {
                         <div className="p-6 bg-gray-50 flex gap-3">
                             <button 
                                 onClick={downloadQRCode}
-                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95"
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-all text-sm border border-gray-200"
                             >
-                                <Download size={18} />
-                                Download PNG
+                                <Download size={16} />
+                                PNG
+                            </button>
+                            <button 
+                                onClick={downloadPDFLabel}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all text-sm shadow-md active:scale-95"
+                            >
+                                <Download size={16} />
+                                Download PDF
                             </button>
                         </div>
                     </div>
